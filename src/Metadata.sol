@@ -4,8 +4,11 @@ pragma solidity ^0.8.13;
 import "openzeppelin-contracts/contracts/utils/Base64.sol";
 import "openzeppelin-contracts/contracts/utils/Strings.sol";
 
+import "./HexadecimalColor.sol";
+
 contract Metadata {
-    using Strings for uint256;
+    using Strings for uint8;
+    using HexadecimalColor for uint24;
 
     /*//////////////////
           METADATA
@@ -35,16 +38,6 @@ contract Metadata {
 
     // open defs
     string internal start_defs = "<defs>";
-
-    // gradient => to construct
-    string internal start_gradient =
-        '<linearGradient id="a" x1="0" x2="1" y1="0" y2="0" gradientTransform="rotate(45) scale(1414)" gradientUnits="userSpaceOnUse">';
-
-    // stop (gradient) => to construct
-    string internal stop = '<stop offset="0" style="stop-color:#cf7c7c;"/>';
-
-    // close gradient
-    string internal close_gradient = "</linearGradient>";
 
     // close defs
     string internal close_defs = "</defs>";
@@ -90,10 +83,10 @@ contract Metadata {
                             background,
                             animated_layer,
                             _getFigure(1),
-                            _getNumbers(1),
+                            _getNumbers(5, 51),
                             start_defs,
-                            _createGradient(1),
-                            _createGradient(1),
+                            _createGradient(true, 0xffaa76, 0xee33aa),
+                            _createGradient(false, 0xeeaa11, 0x55ff99),
                             close_defs,
                             footer
                         )
@@ -107,13 +100,42 @@ contract Metadata {
             '<path style="fill:#000" d="M373 522s-42-22-38-77c2-53 44-89 86-96 59-8 110 37 124 51 0 0 34-18 58-4 24 13 53 50 17 86l45 107v8c-1-1-58-103-68-107 0 0-14-2-30-14 0 0-3-2-3 1-1 3-20 56-51 56 0 0-42 0-56 23l-10 26c-2 3 0 4 1 6l20 30h35v14h-16v2l13 7-9 11-27-18-5-5-27-41s-1-2 1-7l4-11s2-5-4-5c-4-1-20-13-22-19l-23-12s-3-1-4 2c-1 4-4 5-1 8l13 32h29v13h-13v3l11 6-8 11-26-20-21-44v-4l5-16v-3Zm223-82c4 0 7 3 7 7s-3 7-7 7-7-3-7-7 3-7 7-7Z"/>';
     }
 
-    function _getNumbers(uint256) internal pure returns (string memory) {
+    function _getNumbers(uint8 tokenId, uint8 rarityAmount)
+        internal
+        pure
+        returns (string memory)
+    {
         return
-            '<text text-anchor="middle" x="50%" y="946" style="font-family:&quot;Poiret One&quot;;font-size:34px">1/255</text>';
+            string.concat(
+                '<text text-anchor="middle" x="50%" y="946" style="font-family:&quot;Poiret One&quot;;font-size:34px">',
+                tokenId.toString(),
+                "/",
+                rarityAmount.toString(),
+                "</text>"
+            );
     }
 
-    function _createGradient(uint256) internal pure returns (string memory) {
+    function _createGradient(
+        bool isBackground,
+        uint24 color1,
+        uint24 color2
+    ) internal pure returns (string memory) {
         return
-            '<linearGradient id="a" x1="0" x2="1" y1="0" y2="0" gradientTransform="rotate(45) scale(1414)" gradientUnits="userSpaceOnUse"><stop offset="0" style="stop-color:#cf7c7c;"/><stop offset="0" style="stop-color:#cf7c7c;"/></linearGradient>';
+            string.concat(
+                // first part
+                "<linearGradient id=",
+                isBackground ? '"a"' : '"b"',
+                ' x1="0" x2="1" y1="0" y2="0" gradientUnits="userSpaceOnUse" gradientTransform="rotate(',
+                isBackground ? "45" : "135",
+                ') scale(1414)">',
+                // second part
+                '<stop offset="0" style="stop-color:',
+                color1.toColor(),
+                ';"/>',
+                '<stop offset="1" style="stop-color:',
+                color2.toColor(),
+                ';"/>',
+                "</linearGradient>"
+            );
     }
 }
