@@ -29,6 +29,8 @@ contract SolarPunk is ERC721Enumerable, Ownable {
     /*////////////////////////////
             PUBLIC FUNCTIONS
     ////////////////////////////*/
+    event log(uint256 a);
+
     /**
      * @notice Mint a Solar with a pseudorandom number based on
      * sender address and curent available items
@@ -48,6 +50,7 @@ contract SolarPunk is ERC721Enumerable, Ownable {
                 )
             )
         );
+        emit log(tokenId);
         _mint(msg.sender, tokenId);
         payable(msg.sender).sendValue(msg.value - 0.03 ether);
     }
@@ -125,6 +128,8 @@ contract SolarPunk is ERC721Enumerable, Ownable {
             randNum % _currentPrincipesList.length()
         );
         uint256 itemId = _principeBoxes[principe].draw(randNum);
+
+        emit log(itemId);
 
         // transform
         return SolarPunkService.transformItemId(principe, itemId);

@@ -2,7 +2,6 @@
 pragma solidity ^0.8.13;
 
 import {Test, Vm} from "forge-std/Test.sol";
-import "forge-std/Vm.sol";
 
 import "src/SolarPunk.sol";
 import "src/figures/Kiwi.sol";
@@ -77,16 +76,46 @@ contract SolarPunk_test is Test {
     }
 
     function testCannotMintSolar() public {
-        //     require(msg.value >= 0.03 ether, "SPK: below minimum cost");
-        // require(_availableItems > 0, "SPK: no more mintable item");
+        vm.expectRevert("SPK: no more mintable item");
+        vm.prank(USER);
+        solar.mintSolar{value: PRICE}();
+
+        vm.prank(OWNER);
+        solar.addNewPrincipe(KIWI);
+
+        vm.expectRevert("SPK: below minimum cost");
+        vm.prank(USER);
+        solar.mintSolar{value: PRICE - 100}();
     }
 
     function testMintAllSolar() public {
-        //
+        vm.prank(OWNER);
+        solar.addNewPrincipe(KIWI);
+
+        vm.startPrank(USER);
+        for (uint256 i; i < 84; i++) {
+            solar.mintSolar{value: PRICE}();
+        }
+
+        assertEq(solar.balanceOf(USER), 84);
+        vm.expectRevert("SPK: no more mintable item");
+        solar.mintSolar{value: PRICE}();
     }
 
     function testManipulatePseudorandomMint(uint256 mintedItem) public {
         // try multiple pk created by USER one for each case of available items
         // mint the ultrarare and the superrare
+    }
+
+    function testAddPrincipeWhenEmpty() public {
+        //
+    }
+
+    function testAddPrincipeWhenFull() public {
+        //
+    }
+
+    function testAddPrincipeWhenRemainning() public {
+        //
     }
 }
