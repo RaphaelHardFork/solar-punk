@@ -16,32 +16,9 @@ contract SolarPunk is ERC721Enumerable, Ownable {
     using EnumerableSet for EnumerableSet.UintSet;
     using SwapAndPop for SwapAndPop.Box;
 
-    event MintRequestCreated(
-        address indexed account,
-        uint256 indexed mintRequest,
-        uint256 targetBlock
-    );
-    event MintRequestPostponed(
-        address indexed account,
-        uint256 indexed oldMintRequest,
-        uint256 indexed mintRequest,
-        uint256 targetBlock
-    );
-    event MintRequestFilled(
-        address indexed account,
-        uint256 indexed mintRequest,
-        uint256 tokenId
-    );
-
-    struct MintRequest {
-        address account;
-        uint96 blockNumber;
-    }
-
     mapping(uint256 => address) private _figuresByPrincipes;
     mapping(uint256 => SwapAndPop.Box) private _principeBoxes;
     EnumerableSet.UintSet private _currentPrincipesList;
-    EnumerableSet.UintSet private _queuedMint;
 
     uint256 private _availableItems;
 
@@ -53,42 +30,26 @@ contract SolarPunk is ERC721Enumerable, Ownable {
             PUBLIC FUNCTIONS
     ////////////////////////////*/
     /**
-     * @notice Create and store a mint request, decrease the
-     * available number of item.
-     * User can execute request for others user, this operation
-     * is refunded
+     * @notice Mint a Solar with a pseudorandom number based on
+     * sender address and curent available items
+     *
+     * TODO penalize large gas price? to avoid front-running on
+     * one item
      */
-    function requestMint(uint256 amount) external payable {
+    function mintSolar() external payable {
         require(msg.value >= 0.03 ether, "SPK: below minimum cost");
-
-        // execute requests and return discount amount
-        uint256 discount = _executeRequests(amount);
-
-        // create and queue mint request
         require(_availableItems > 0, "SPK: no more mintable item");
         --_availableItems;
-        uint96 targetBlock = uint96(block.number + 10);
-        uint256 mintRequest = _packRequest(msg.sender, targetBlock);
-        _queueRequest(mintRequest);
 
-        emit MintRequestCreated(msg.sender, mintRequest, targetBlock);
-
-        // refund
-        payable(msg.sender).sendValue(
-            discount > msg.value ? msg.value : discount
+        uint256 tokenId = _drawAndTransform(
+            uint256(
+                keccak256(
+                    bytes.concat(bytes20(msg.sender), bytes32(_availableItems))
+                )
+            )
         );
-    }
-
-    /**
-     * @notice Allow users to fill any requests
-     */
-    function fillMintRequests(uint256[] memory requests) external {
-        for (uint256 i; i < requests.length; ) {
-            _tryFillRequest(requests[i], block.number, i + 1);
-            unchecked {
-                ++i;
-            }
-        }
+        _mint(msg.sender, tokenId);
+        payable(msg.sender).sendValue(msg.value - 0.03 ether);
     }
 
     function addNewPrincipe(address figureAddr) external onlyOwner {
@@ -151,71 +112,9 @@ contract SolarPunk is ERC721Enumerable, Ownable {
         return SolarPunkService.encodedMetadata(tokenId, figureAddr);
     }
 
-    event log(uint256 a);
-
     /*////////////////////////////
             INTERNAL FUNCTIONS
     ////////////////////////////*/
-    function _executeRequests(uint256 amount)
-        internal
-        returns (uint256 discount)
-    {
-        amount = Math.min(10, _queuedMint.length());
-        uint256 initialGasAmount = gasleft();
-
-        // loop among queued request
-        for (uint256 i; i < amount; ) {
-            uint256 rawRequest = _queuedMint.at(i);
-            unchecked {
-                ++i;
-            }
-            _tryFillRequest(rawRequest, block.number, i);
-        }
-
-        // return value consummed for this operation
-        discount = amount == 0
-            ? 0
-            : (initialGasAmount - gasleft()) * tx.gasprice;
-    }
-
-    /**
-     * @notice To be use in a loop, either fill or postpone or
-     * nothing
-     */
-    function _tryFillRequest(
-        uint256 rawRequest,
-        uint256 currentBlockNumber,
-        uint256 i
-    ) internal {
-        (address account, uint96 blockNumber) = _readRawRequest(rawRequest);
-        require(account != address(0), "SPK: zero address in request");
-
-        // too early
-        if (currentBlockNumber < blockNumber) return; // exit
-
-        // can execute
-        if (currentBlockNumber - blockNumber <= 255) {
-            uint256 tokenId = _drawAndTransform(
-                uint256(blockhash(blockNumber)) * i
-            );
-            _queuedMint.remove(rawRequest);
-            _mint(account, tokenId);
-            emit MintRequestFilled(account, rawRequest, tokenId);
-        } else {
-            // request need to be postponed
-            uint96 targetBlock = uint96(block.number + 10 + i);
-            uint256 mintRequest = _packRequest(account, targetBlock);
-            _queuedMint.remove(rawRequest);
-            _queueRequest(rawRequest);
-            emit MintRequestPostponed(
-                account,
-                rawRequest,
-                mintRequest,
-                targetBlock
-            );
-        }
-    }
-
     /**
      * @notice Take an item from available item and return
      * NFT metadata packed into an `uint256`
@@ -228,30 +127,6 @@ contract SolarPunk is ERC721Enumerable, Ownable {
         uint256 itemId = _principeBoxes[principe].draw(randNum);
 
         // transform
-        return SolarPunkService.transformItemId(principe + 1, itemId);
-    }
-
-    function _queueRequest(uint256 rawRequest) internal {
-        require(!_queuedMint.contains(rawRequest), "SPK: duplicate request");
-        _queuedMint.add(rawRequest);
-    }
-
-    /*////////////////////////////
-            INTERNAL GETTERS
-    ////////////////////////////*/
-    function _packRequest(address account, uint96 targetBlock)
-        internal
-        pure
-        returns (uint256)
-    {
-        return uint256(bytes32(abi.encodePacked(account, targetBlock)));
-    }
-
-    function _readRawRequest(uint256 rawRequest)
-        internal
-        pure
-        returns (address, uint96)
-    {
-        return (address(uint160(rawRequest >> 96)), uint96(rawRequest));
+        return SolarPunkService.transformItemId(principe, itemId);
     }
 }
