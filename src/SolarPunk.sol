@@ -6,6 +6,7 @@ import "openzeppelin-contracts/contracts/token/ERC721/extensions/ERC721Enumerabl
 import "openzeppelin-contracts/contracts/access/Ownable.sol";
 import "openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
 import "openzeppelin-contracts/contracts/utils/Address.sol";
+import "openzeppelin-contracts/contracts/utils/math/Math.sol";
 
 import "src/metadata/SolarPunkService.sol";
 import "src/boxes/SwapAndPop.sol";
@@ -42,19 +43,52 @@ contract SolarPunk is ERC721Enumerable, Ownable {
     EnumerableSet.UintSet private _currentPrincipesList;
     EnumerableSet.UintSet private _queuedMint;
 
+    uint256 private _availableItems;
+
     constructor(address owner) ERC721("SolarPunk", "SPK") {
         transferOwnership(owner);
     }
 
+    /*////////////////////////////
+            PUBLIC FUNCTIONS
+    ////////////////////////////*/
+    /**
+     * @notice Create and store a mint request, decrease the
+     * available number of item.
+     * User can execute request for others user, this operation
+     * is refunded
+     */
     function requestMint(uint256 amount) external payable {
         require(msg.value >= 0.03 ether, "SPK: below minimum cost");
 
-        uint256 discount = _executeMints(amount);
-        _createMintRequest(msg.sender);
+        // execute requests and return discount amount
+        uint256 discount = _executeRequests(amount);
+
+        // create and queue mint request
+        require(_availableItems > 0, "SPK: no more mintable item");
+        --_availableItems;
+        uint96 targetBlock = uint96(block.number + 10);
+        uint256 mintRequest = _packRequest(msg.sender, targetBlock);
+        _queueRequest(mintRequest);
+
+        emit MintRequestCreated(msg.sender, mintRequest, targetBlock);
 
         // refund
-        if (discount > msg.value) discount = msg.value;
-        payable(msg.sender).sendValue(discount);
+        payable(msg.sender).sendValue(
+            discount > msg.value ? msg.value : discount
+        );
+    }
+
+    /**
+     * @notice Allow users to fill any requests
+     */
+    function fillMintRequests(uint256[] memory requests) external {
+        for (uint256 i; i < requests.length; ) {
+            _tryFillRequest(requests[i], block.number, i + 1);
+            unchecked {
+                ++i;
+            }
+        }
     }
 
     function addNewPrincipe(address figureAddr) external onlyOwner {
@@ -69,10 +103,18 @@ contract SolarPunk is ERC721Enumerable, Ownable {
         _currentPrincipesList.add(index);
         _figuresByPrincipes[index] = figureAddr;
         _principeBoxes[index].itemsAmount = 84;
+        _availableItems += 84;
     }
 
+    /*////////////////////////////
+                GETTERS
+    ////////////////////////////*/
     function currentPrincipes() external view returns (uint256) {
         return _currentPrincipesList.length();
+    }
+
+    function availableItem() external view returns (uint256) {
+        return _availableItems;
     }
 
     function remainningItemAtPrincipe(uint256 principe)
@@ -109,72 +151,75 @@ contract SolarPunk is ERC721Enumerable, Ownable {
         return SolarPunkService.encodedMetadata(tokenId, figureAddr);
     }
 
-    function _createMintRequest(address account) internal {
-        uint96 targetBlock = uint96(block.number + 10);
-        uint256 mintRequest = uint256(
-            bytes32(abi.encodePacked(account, uint96(block.number + 10)))
-        );
+    event log(uint256 a);
 
-        _queuedMint.add(mintRequest);
-        emit MintRequestCreated(account, mintRequest, targetBlock);
-    }
+    /*////////////////////////////
+            INTERNAL FUNCTIONS
+    ////////////////////////////*/
+    function _executeRequests(uint256 amount)
+        internal
+        returns (uint256 discount)
+    {
+        amount = Math.min(10, _queuedMint.length());
+        uint256 initialGasAmount = gasleft();
 
-    function _executeMints(uint256 amount) internal returns (uint256 discount) {
-        if (amount >= 10) {
-            amount = 10;
-        }
-        if (amount > _queuedMint.length()) {
-            amount = _queuedMint.length();
-        }
-
-        uint256 gas = gasleft();
-
-        uint256 currentBlockNumber = block.number;
+        // loop among queued request
         for (uint256 i; i < amount; ) {
             uint256 rawRequest = _queuedMint.at(i);
-            (address account, uint96 blockNumber) = (
-                address(uint160(rawRequest >> 96)),
-                uint96(rawRequest)
-            );
-
             unchecked {
                 ++i;
             }
-
-            if (blockNumber < currentBlockNumber - 255) {
-                // postpone blocknumber as expired
-                uint96 targetBlock = uint96(block.number + 10);
-                uint256 mintRequest = uint256(
-                    bytes32(
-                        abi.encodePacked(account, uint96(block.number + 10))
-                    )
-                );
-                _queuedMint.remove(rawRequest);
-                _queuedMint.add(mintRequest);
-                emit MintRequestPostponed(
-                    account,
-                    rawRequest,
-                    mintRequest,
-                    targetBlock
-                );
-                continue;
-            }
-
-            if (blockNumber >= blockNumber) {
-                uint256 tokenId = _drawAndTransform(
-                    uint256(blockhash(blockNumber)) * i
-                );
-
-                _queuedMint.remove(rawRequest);
-                emit MintRequestFilled(account, rawRequest, tokenId);
-                _mint(account, tokenId);
-            }
+            _tryFillRequest(rawRequest, block.number, i);
         }
 
         // return value consummed for this operation
-        discount = (gas - gasleft()) * tx.gasprice;
+        discount = amount == 0
+            ? 0
+            : (initialGasAmount - gasleft()) * tx.gasprice;
     }
 
+    /**
+     * @notice To be use in a loop, either fill or postpone or
+     * nothing
+     */
+    function _tryFillRequest(
+        uint256 rawRequest,
+        uint256 currentBlockNumber,
+        uint256 i
+    ) internal {
+        (address account, uint96 blockNumber) = _readRawRequest(rawRequest);
+        require(account != address(0), "SPK: zero address in request");
+
+        // too early
+        if (currentBlockNumber < blockNumber) return; // exit
+
+        // can execute
+        if (currentBlockNumber - blockNumber <= 255) {
+            uint256 tokenId = _drawAndTransform(
+                uint256(blockhash(blockNumber)) * i
+            );
+            _queuedMint.remove(rawRequest);
+            _mint(account, tokenId);
+            emit MintRequestFilled(account, rawRequest, tokenId);
+        } else {
+            // request need to be postponed
+            uint96 targetBlock = uint96(block.number + 10 + i);
+            uint256 mintRequest = _packRequest(account, targetBlock);
+            _queuedMint.remove(rawRequest);
+            _queueRequest(rawRequest);
+            emit MintRequestPostponed(
+                account,
+                rawRequest,
+                mintRequest,
+                targetBlock
+            );
+        }
+    }
+
+    /**
+     * @notice Take an item from available item and return
+     * NFT metadata packed into an `uint256`
+     */
     function _drawAndTransform(uint256 randNum) internal returns (uint256) {
         // draw
         uint256 principe = _currentPrincipesList.at(
@@ -184,5 +229,29 @@ contract SolarPunk is ERC721Enumerable, Ownable {
 
         // transform
         return SolarPunkService.transformItemId(principe + 1, itemId);
+    }
+
+    function _queueRequest(uint256 rawRequest) internal {
+        require(!_queuedMint.contains(rawRequest), "SPK: duplicate request");
+        _queuedMint.add(rawRequest);
+    }
+
+    /*////////////////////////////
+            INTERNAL GETTERS
+    ////////////////////////////*/
+    function _packRequest(address account, uint96 targetBlock)
+        internal
+        pure
+        returns (uint256)
+    {
+        return uint256(bytes32(abi.encodePacked(account, targetBlock)));
+    }
+
+    function _readRawRequest(uint256 rawRequest)
+        internal
+        pure
+        returns (address, uint96)
+    {
+        return (address(uint160(rawRequest >> 96)), uint96(rawRequest));
     }
 }
