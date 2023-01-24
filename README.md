@@ -20,7 +20,7 @@
 
 **Encode metadata:**
 
-Adapted for dynamics metadata: create a strcut like this
+Adapted for dynamics metadata: create a struct like this
 
 | Bytes32 | Data                |
 | ------- | ------------------- |

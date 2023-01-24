@@ -8,8 +8,8 @@ import "openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
 import "openzeppelin-contracts/contracts/utils/Address.sol";
 import "openzeppelin-contracts/contracts/utils/math/Math.sol";
 
-import "src/metadata/SolarPunkService.sol";
-import "src/boxes/SwapAndPop.sol";
+import {SolarPunkService} from "src/metadata/SolarPunkService.sol";
+import {SwapAndPop} from "src/boxes/SwapAndPop.sol";
 
 contract SolarPunk is ERC721Enumerable, Ownable {
     using Address for address payable;
