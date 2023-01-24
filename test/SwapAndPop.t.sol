@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import {Test, Vm} from "forge-std/Test.sol";
-import "src/boxes/SwapAndPop.sol";
+import "src/structs/SwapAndPop.sol";
 
 contract SwapAndPop_test is Test {
     using SwapAndPop for SwapAndPop.Box;

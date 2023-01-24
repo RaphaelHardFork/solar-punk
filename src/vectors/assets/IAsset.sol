@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.13;
 
-interface IFigure {
+interface IAsset {
     function name() external view returns (string memory);
 
     function path(string memory color) external view returns (string memory);

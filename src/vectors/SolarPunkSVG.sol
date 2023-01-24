@@ -4,9 +4,9 @@ pragma solidity ^0.8.13;
 
 import "openzeppelin-contracts/contracts/utils/Strings.sol";
 
-import "src/svg/HexadecimalColor.sol";
+import "src/utils/HexadecimalColor.sol";
 
-library SolarPunkSVG {
+library SolarPunkFrameSVG {
     using Strings for uint8;
     using HexadecimalColor for uint24;
 

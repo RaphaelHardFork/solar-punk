@@ -4,10 +4,10 @@ pragma solidity ^0.8.13;
 import {Test, Vm} from "forge-std/Test.sol";
 
 import "src/SolarPunk.sol";
-import "src/figures/Kiwi.sol";
-import "src/figures/IFigure.sol";
+import "src/vectors/assets/Kiwi.sol";
+import "src/vectors/assets/IAsset.sol";
 
-contract MockFigure is IFigure {
+contract MockFigure is IAsset {
     string public name = "name";
 
     function path(string memory) public pure override returns (string memory) {
@@ -48,74 +48,56 @@ contract SolarPunk_test is Test {
         vm.roll(100000);
     }
 
-    function testAddNewPrincipe() public {
-        vm.prank(OWNER);
-        solar.addNewPrincipe(KIWI);
+    function test_constructor_NameAndOwnerShip() public {
+        assertEq(solar.name(), "SolarPunk");
+        assertEq(solar.symbol(), "SPK");
+        assertEq(solar.owner(), OWNER);
+    }
 
-        assertEq(solar.availableItem(), 84);
+    function test_addAsset_FirstOne() public {
+        vm.prank(OWNER);
+        solar.addAsset(KIWI);
+        assertEq(solar.availableItems(), 84);
         assertEq(solar.totalRemainingItems(), 84);
-        assertEq(solar.remainningItemAtPrincipe(1), 84);
-        assertEq(solar.currentPrincipes(), 1);
+        assertEq(solar.remainningItemAtIndex(1), 84);
+        assertEq(solar.numberOfAssets(), 1);
     }
 
-    function testMintSolar() public {
-        vm.prank(OWNER);
-        solar.addNewPrincipe(KIWI);
-
-        vm.prank(USER);
-        solar.mintSolar{value: PRICE}();
-
-        assertEq(solar.availableItem(), 83);
-        assertEq(solar.totalRemainingItems(), 83);
-        assertEq(solar.remainningItemAtPrincipe(1), 83);
-
-        assertEq(solar.totalSupply(), 1);
-        assertEq(solar.balanceOf(USER), 1);
-
-        solar.tokenURI(solar.tokenOfOwnerByIndex(USER, 0));
+    function test_addAsset_SecondOne() public {
+        vm.startPrank(OWNER);
+        solar.addAsset(FIGURE1);
+        solar.addAsset(KIWI);
+        assertEq(solar.availableItems(), 84 * 2);
+        assertEq(solar.totalRemainingItems(), 84 * 2);
+        assertEq(solar.remainningItemAtIndex(2), 84);
+        assertEq(solar.numberOfAssets(), 2);
     }
 
-    function testCannotMintSolar() public {
-        vm.expectRevert("SPK: no more mintable item");
-        vm.prank(USER);
-        solar.mintSolar{value: PRICE}();
-
+    function test_addAsset_AllowRandomAddr(address addr) public {
         vm.prank(OWNER);
-        solar.addNewPrincipe(KIWI);
-
-        vm.expectRevert("SPK: below minimum cost");
-        vm.prank(USER);
-        solar.mintSolar{value: PRICE - 100}();
+        solar.addAsset(addr);
+        assertEq(solar.availableItems(), 84);
+        assertEq(solar.totalRemainingItems(), 84);
+        assertEq(solar.remainningItemAtIndex(1), 84);
+        assertEq(solar.numberOfAssets(), 1);
     }
 
-    function testMintAllSolar() public {
-        vm.prank(OWNER);
-        solar.addNewPrincipe(KIWI);
-
+    function test_requestMint_CannotWhenWrongBlockRange() public {
+        uint256 belowRange = block.number - 1;
+        uint256 aboveRange = block.number + 72001;
         vm.startPrank(USER);
-        for (uint256 i; i < 84; i++) {
-            solar.mintSolar{value: PRICE}();
-        }
+        vm.expectRevert(
+            abi.encodeWithSelector(OutOfBlockRange.selector, belowRange)
+        );
+        solar.requestMint(belowRange);
 
-        assertEq(solar.balanceOf(USER), 84);
-        vm.expectRevert("SPK: no more mintable item");
-        solar.mintSolar{value: PRICE}();
+        vm.expectRevert(
+            abi.encodeWithSelector(OutOfBlockRange.selector, aboveRange)
+        );
+        solar.requestMint(aboveRange);
     }
 
-    function testManipulatePseudorandomMint(uint256 mintedItem) public {
-        // try multiple pk created by USER one for each case of available items
-        // mint the ultrarare and the superrare
-    }
+    function test_requestMint_CannotWhenLessValue() public {}
 
-    function testAddPrincipeWhenEmpty() public {
-        //
-    }
-
-    function testAddPrincipeWhenFull() public {
-        //
-    }
-
-    function testAddPrincipeWhenRemainning() public {
-        //
-    }
+    function test_requestMint_CannotWhenNoItemAvailable() public {}
 }

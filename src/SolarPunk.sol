@@ -2,25 +2,35 @@
 
 pragma solidity ^0.8.13;
 
-import "openzeppelin-contracts/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
-import "openzeppelin-contracts/contracts/access/Ownable.sol";
-import "openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
-import "openzeppelin-contracts/contracts/utils/Address.sol";
-import "openzeppelin-contracts/contracts/utils/math/Math.sol";
+import {ERC721Enumerable, ERC721} from "openzeppelin-contracts/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
+import {EnumerableSet} from "openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
+import {Address} from "openzeppelin-contracts/contracts/utils/Address.sol";
+import {Math} from "openzeppelin-contracts/contracts/utils/math/Math.sol";
 
 import {SolarPunkService} from "src/metadata/SolarPunkService.sol";
-import {SwapAndPop} from "src/boxes/SwapAndPop.sol";
+import {SwapAndPop} from "src/structs/SwapAndPop.sol";
+
+error OutOfBlockRange(uint256 blockNumber);
+error NoValueTransferred();
+error NoMoreAvailableItems();
+
+error NoRequestToFulfill();
+error InexistantIndex(uint256 index);
+error InexistantAsset(uint256 index);
 
 contract SolarPunk is ERC721Enumerable, Ownable {
     using Address for address payable;
     using EnumerableSet for EnumerableSet.UintSet;
     using SwapAndPop for SwapAndPop.Box;
 
-    mapping(uint256 => address) private _figuresByPrincipes;
-    mapping(uint256 => SwapAndPop.Box) private _principeBoxes;
-    EnumerableSet.UintSet private _currentPrincipesList;
-
     uint256 private _availableItems;
+
+    mapping(uint256 => address) private _assetByIndex;
+    mapping(uint256 => SwapAndPop.Box) private _assetsBoxesByIndex;
+    mapping(address => uint256[]) private _itemsToMint;
+    EnumerableSet.UintSet private _activeIndexList;
+    EnumerableSet.UintSet private _requestList;
 
     constructor(address owner) ERC721("SolarPunk", "SPK") {
         transferOwnership(owner);
@@ -29,73 +39,84 @@ contract SolarPunk is ERC721Enumerable, Ownable {
     /*////////////////////////////
             PUBLIC FUNCTIONS
     ////////////////////////////*/
-    event log(uint256 a);
-
-    /**
-     * @notice Mint a Solar with a pseudorandom number based on
-     * sender address and curent available items
-     *
-     * TODO penalize large gas price? to avoid front-running on
-     * one item
-     */
-    function mintSolar() external payable {
-        require(msg.value >= 0.03 ether, "SPK: below minimum cost");
-        require(_availableItems > 0, "SPK: no more mintable item");
+    function requestMint(uint256 blockNumber) external payable {
+        // check input value
+        if (blockNumber < block.number || blockNumber > block.number + 72000)
+            revert OutOfBlockRange(blockNumber);
+        if (msg.value < 0.03 ether) revert NoValueTransferred();
+        if (_availableItems == 0) revert NoMoreAvailableItems();
         --_availableItems;
 
-        uint256 tokenId = _drawAndTransform(
+        // commit to a block
+        _requestList.add(
             uint256(
-                keccak256(
-                    bytes.concat(bytes20(msg.sender), bytes32(_availableItems))
+                bytes32(
+                    abi.encodePacked(uint160(msg.sender) & uint96(blockNumber))
                 )
             )
         );
-        emit log(tokenId);
-        _mint(msg.sender, tokenId);
+
+        // TODO fulfill request for discount
+
+        // refund overdue
         payable(msg.sender).sendValue(msg.value - 0.03 ether);
     }
 
-    function addNewPrincipe(address figureAddr) external onlyOwner {
-        uint256 length = _currentPrincipesList.length();
+    function fulfillRequest() external {
+        uint256 length = _requestList.length();
+        if (length == 0) revert NoRequestToFulfill();
+
+        _fulfillRequests(length);
+    }
+
+    /// @dev avoid big list!
+    function mintPendingItems() external {
+        uint256[] memory pendingItem = _itemsToMint[msg.sender];
+        for (uint256 i; i < pendingItem.length; ) {
+            _mint(msg.sender, pendingItem[i]);
+        }
+        delete _itemsToMint[msg.sender];
+    }
+
+    function addAsset(address assetAddr) external onlyOwner {
+        // check addr? onlyOwner
+        uint256 length = _activeIndexList.length();
         uint256 index;
         if (length != 0) {
-            index = _currentPrincipesList.at(length - 1) + 1;
+            index = _activeIndexList.at(length - 1) + 1;
         } else {
             index = 1;
         }
 
-        _currentPrincipesList.add(index);
-        _figuresByPrincipes[index] = figureAddr;
-        _principeBoxes[index].itemsAmount = 84;
+        _activeIndexList.add(index);
+        _assetByIndex[index] = assetAddr;
+        _assetsBoxesByIndex[index].itemsAmount = 84;
         _availableItems += 84;
     }
 
     /*////////////////////////////
                 GETTERS
     ////////////////////////////*/
-    function currentPrincipes() external view returns (uint256) {
-        return _currentPrincipesList.length();
+    function numberOfAssets() external view returns (uint256) {
+        return _activeIndexList.length();
     }
 
-    function availableItem() external view returns (uint256) {
+    function availableItems() external view returns (uint256) {
         return _availableItems;
     }
 
-    function remainningItemAtPrincipe(uint256 principe)
+    function remainningItemAtIndex(uint256 index)
         external
         view
         returns (uint256)
     {
-        require(
-            _currentPrincipesList.contains(principe),
-            "SPK: inexistant principe"
-        );
-        return _principeBoxes[principe].itemsAmount;
+        if (!_activeIndexList.contains(index)) revert InexistantIndex(index);
+        return _assetsBoxesByIndex[index].itemsAmount;
     }
 
     function totalRemainingItems() external view returns (uint256 totalItem) {
-        for (uint256 i; i < _currentPrincipesList.length(); ) {
-            totalItem += _principeBoxes[_currentPrincipesList.at(i)]
+        for (uint256 i; i < _activeIndexList.length(); ) {
+            totalItem += _assetsBoxesByIndex[_activeIndexList.at(i)]
                 .itemsAmount;
             unchecked {
                 ++i;
@@ -109,10 +130,11 @@ contract SolarPunk is ERC721Enumerable, Ownable {
         override
         returns (string memory)
     {
-        address figureAddr = _figuresByPrincipes[uint8(tokenId >> 248)];
-        require(figureAddr != address(0), "SPK: inexistant figure");
+        uint256 index = uint8(tokenId >> 248);
+        address assetAddr = _assetByIndex[index];
+        if (assetAddr == address(0)) revert InexistantAsset(index);
 
-        return SolarPunkService.encodedMetadata(tokenId, figureAddr);
+        return SolarPunkService.encodedMetadata(tokenId, assetAddr);
     }
 
     /*////////////////////////////
@@ -124,14 +146,65 @@ contract SolarPunk is ERC721Enumerable, Ownable {
      */
     function _drawAndTransform(uint256 randNum) internal returns (uint256) {
         // draw
-        uint256 principe = _currentPrincipesList.at(
-            randNum % _currentPrincipesList.length()
+        uint256 index = _activeIndexList.at(
+            randNum % _activeIndexList.length()
         );
-        uint256 itemId = _principeBoxes[principe].draw(randNum);
-
-        emit log(itemId);
+        uint256 itemId = _assetsBoxesByIndex[index].draw(randNum);
 
         // transform
-        return SolarPunkService.transformItemId(principe, itemId);
+        return SolarPunkService.transformItemId(index, itemId);
+    }
+
+    function _fulfillRequests(uint256 length) internal {
+        uint256 lastBlockhash = block.number - 256;
+        uint256[] memory requestToClean = new uint256[](length);
+
+        for (uint256 i; i < length; ) {
+            uint256 request = _requestList.at(i);
+            uint256 blockNumber = uint96(request);
+            address requestOwner = address(uint160(request >> 96));
+
+            if (blockNumber < lastBlockhash) {
+                // request should be postponed
+                requestToClean[i] = request;
+                _requestList.add(
+                    uint256(
+                        bytes32(
+                            abi.encodePacked(
+                                uint160(requestOwner) &
+                                    uint96(lastBlockhash + 3000)
+                            )
+                        )
+                    )
+                );
+            } else {
+                if (requestOwner == msg.sender) {
+                    // mint directly the item
+                    _mint(
+                        msg.sender,
+                        _drawAndTransform(uint256(blockhash(blockNumber)))
+                    );
+                } else {
+                    // add item to the minting list
+                    _itemsToMint[requestOwner].push(
+                        _drawAndTransform(uint256(blockhash(blockNumber)))
+                    );
+                }
+            }
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        // clean erroned requests in the list
+        for (uint256 i; i < length; ) {
+            if (requestToClean[i] != 0) {
+                _requestList.remove(requestToClean[i]);
+            }
+            unchecked {
+                ++i;
+            }
+        }
     }
 }
