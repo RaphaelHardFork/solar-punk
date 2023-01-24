@@ -12,8 +12,9 @@ import {SolarPunkService} from "src/metadata/SolarPunkService.sol";
 import {SwapAndPop} from "src/structs/SwapAndPop.sol";
 
 error OutOfBlockRange(uint256 blockNumber);
-error NoValueTransferred();
-error NoMoreAvailableItems();
+error ValueBelowExpected(uint256 value);
+error NoAvailableItems();
+error RequestAlreadyExist(uint256 blockNumber);
 
 error NoRequestToFulfill();
 error InexistantIndex(uint256 index);
@@ -41,20 +42,19 @@ contract SolarPunk is ERC721Enumerable, Ownable {
     ////////////////////////////*/
     function requestMint(uint256 blockNumber) external payable {
         // check input value
-        if (blockNumber < block.number || blockNumber > block.number + 72000)
+        if (blockNumber <= block.number || blockNumber > block.number + 72000)
             revert OutOfBlockRange(blockNumber);
-        if (msg.value < 0.03 ether) revert NoValueTransferred();
-        if (_availableItems == 0) revert NoMoreAvailableItems();
+        if (msg.value < 0.03 ether) revert ValueBelowExpected(msg.value);
+        if (_availableItems == 0) revert NoAvailableItems();
         --_availableItems;
 
         // commit to a block
-        _requestList.add(
-            uint256(
-                bytes32(
-                    abi.encodePacked(uint160(msg.sender) & uint96(blockNumber))
-                )
-            )
+        uint256 request = uint256(
+            bytes32(abi.encodePacked(uint160(msg.sender), uint96(blockNumber)))
         );
+        if (_requestList.contains(request))
+            revert RequestAlreadyExist(blockNumber);
+        _requestList.add(request);
 
         // TODO fulfill request for discount
 
@@ -97,6 +97,18 @@ contract SolarPunk is ERC721Enumerable, Ownable {
     /*////////////////////////////
                 GETTERS
     ////////////////////////////*/
+    function requestList() external view returns (uint256[] memory) {
+        return _requestList.values();
+    }
+
+    function pendingMints(address account)
+        external
+        view
+        returns (uint256[] memory)
+    {
+        return _itemsToMint[account];
+    }
+
     function numberOfAssets() external view returns (uint256) {
         return _activeIndexList.length();
     }
@@ -171,8 +183,8 @@ contract SolarPunk is ERC721Enumerable, Ownable {
                     uint256(
                         bytes32(
                             abi.encodePacked(
-                                uint160(requestOwner) &
-                                    uint96(lastBlockhash + 3000)
+                                uint160(requestOwner),
+                                uint96(block.number + 3000 + i)
                             )
                         )
                     )

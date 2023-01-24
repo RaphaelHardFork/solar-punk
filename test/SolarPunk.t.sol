@@ -95,9 +95,273 @@ contract SolarPunk_test is Test {
             abi.encodeWithSelector(OutOfBlockRange.selector, aboveRange)
         );
         solar.requestMint(aboveRange);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(OutOfBlockRange.selector, block.number)
+        );
+        solar.requestMint(block.number);
     }
 
-    function test_requestMint_CannotWhenLessValue() public {}
+    function test_requestMint_CannotWhenLessValue() public {
+        vm.startPrank(USER);
+        vm.expectRevert(abi.encodeWithSelector(ValueBelowExpected.selector, 0));
+        solar.requestMint(block.number + 1);
+        vm.expectRevert(
+            abi.encodeWithSelector(ValueBelowExpected.selector, 100)
+        );
+        solar.requestMint{value: 100}(block.number + 1);
+    }
 
-    function test_requestMint_CannotWhenNoItemAvailable() public {}
+    function test_requestMint_CannotWhenNoItemAvailable() public {
+        vm.startPrank(USER);
+        vm.expectRevert(NoAvailableItems.selector);
+        solar.requestMint{value: 0.03 ether}(block.number + 1);
+    }
+
+    function test_requestMint_CannotRequestSameBlockNumber() public {
+        uint256 targetBlock = block.number + 10;
+        vm.prank(OWNER);
+        solar.addAsset(KIWI);
+        vm.startPrank(USER);
+        solar.requestMint{value: 0.03 ether}(targetBlock);
+        vm.expectRevert(
+            abi.encodeWithSelector(RequestAlreadyExist.selector, targetBlock)
+        );
+        solar.requestMint{value: 0.03 ether}(targetBlock);
+    }
+
+    function test_requestMint_RequestOneMint() public {
+        uint256 targetBlock = block.number + 10;
+        vm.prank(OWNER);
+        solar.addAsset(KIWI);
+        vm.startPrank(USER);
+        solar.requestMint{value: 0.03 ether}(targetBlock);
+
+        assertEq(solar.availableItems(), 83);
+        uint256[] memory requestList = solar.requestList();
+        assertEq(workaround_readRequestOwner(requestList[0]), USER);
+        assertEq(workaround_readRequestBlock(requestList[0]), targetBlock);
+    }
+
+    function test_requestMint_RequestSeveralMint() public {
+        uint256 targetBlock = block.number + 10;
+        vm.prank(OWNER);
+        solar.addAsset(KIWI);
+        vm.startPrank(USER);
+        solar.requestMint{value: 0.03 ether}(targetBlock);
+        solar.requestMint{value: 0.03 ether}(targetBlock + 5);
+        solar.requestMint{value: 0.03 ether}(targetBlock + 10);
+        solar.requestMint{value: 0.03 ether}(targetBlock + 15);
+
+        assertEq(solar.availableItems(), 80);
+        uint256[] memory requestList = solar.requestList();
+        for (uint256 i; i < requestList.length; i++) {
+            assertEq(workaround_readRequestOwner(requestList[i]), USER);
+            assertEq(
+                workaround_readRequestBlock(requestList[i]),
+                targetBlock + i * 5
+            );
+        }
+    }
+
+    function test_requestMint_GiveChange() public {
+        uint256 balance = USER.balance;
+        vm.prank(OWNER);
+        solar.addAsset(KIWI);
+        vm.startPrank(USER);
+        solar.requestMint{value: 1 ether}(block.number + 10);
+
+        assertEq(USER.balance, balance - 0.03 ether);
+    }
+
+    function test_fulfillRequest_CannotWhenNoRequest() public {
+        vm.prank(USER);
+        vm.expectRevert(NoRequestToFulfill.selector);
+        solar.fulfillRequest();
+    }
+
+    function test_fulfillRequest_FillOwnRequestAndMint() public {
+        uint256 targetBlock = block.number + 10;
+        vm.prank(OWNER);
+        solar.addAsset(KIWI);
+        vm.startPrank(USER);
+        solar.requestMint{value: 0.03 ether}(targetBlock);
+        solar.fulfillRequest();
+
+        assertEq(solar.totalRemainingItems(), 83);
+        assertEq(solar.remainningItemAtIndex(1), 83);
+        assertEq(solar.balanceOf(USER), 1);
+    }
+
+    function test_fulfillRequest_FillOtherRequest() public {
+        uint256 targetBlock = block.number + 10;
+        vm.prank(OWNER);
+        solar.addAsset(KIWI);
+        vm.prank(USER);
+        solar.requestMint{value: 0.03 ether}(targetBlock);
+        vm.prank(USER2);
+        solar.fulfillRequest();
+
+        assertEq(solar.totalRemainingItems(), 83);
+        assertEq(solar.remainningItemAtIndex(1), 83);
+        assertEq(solar.balanceOf(USER), 0);
+
+        assertEq(solar.pendingMints(USER).length, 1);
+    }
+
+    function test_fulfillRequest_PostponeOwnRequest() public {
+        uint256 targetBlock = block.number + 10;
+        vm.prank(OWNER);
+        solar.addAsset(KIWI);
+        vm.startPrank(USER);
+        solar.requestMint{value: 0.03 ether}(targetBlock);
+        vm.roll(block.number + 300);
+        solar.fulfillRequest();
+
+        assertEq(solar.totalRemainingItems(), 84);
+        assertEq(solar.remainningItemAtIndex(1), 84);
+        assertEq(solar.balanceOf(USER), 0);
+
+        uint256[] memory requestList = solar.requestList();
+        assertEq(requestList.length, 1);
+        assertEq(workaround_readRequestOwner(requestList[0]), USER);
+        assertEq(
+            workaround_readRequestBlock(requestList[0]),
+            block.number + 3000
+        );
+    }
+
+    function test_fulfillRequest_PostponeOtherRequest() public {
+        uint256 targetBlock = block.number + 10;
+        vm.prank(OWNER);
+        solar.addAsset(KIWI);
+        vm.prank(USER);
+        solar.requestMint{value: 0.03 ether}(targetBlock);
+        vm.roll(block.number + 300);
+        vm.prank(USER2);
+        solar.fulfillRequest();
+
+        assertEq(solar.totalRemainingItems(), 84);
+        assertEq(solar.remainningItemAtIndex(1), 84);
+        assertEq(solar.balanceOf(USER), 0);
+
+        uint256[] memory requestList = solar.requestList();
+        assertEq(requestList.length, 1);
+        assertEq(workaround_readRequestOwner(requestList[0]), USER);
+        assertEq(
+            workaround_readRequestBlock(requestList[0]),
+            block.number + 3000
+        );
+    }
+
+    function test_fulfillRequest_FillSeveralOwnRequestsAndMint() public {
+        uint256 targetBlock = block.number + 10;
+        vm.prank(OWNER);
+        solar.addAsset(KIWI);
+        vm.startPrank(USER);
+        solar.requestMint{value: 0.03 ether}(targetBlock);
+        solar.requestMint{value: 0.03 ether}(targetBlock + 5);
+        solar.requestMint{value: 0.03 ether}(targetBlock + 10);
+        solar.requestMint{value: 0.03 ether}(targetBlock + 15);
+        solar.fulfillRequest();
+
+        assertEq(solar.totalRemainingItems(), 80);
+        assertEq(solar.remainningItemAtIndex(1), 80);
+        assertEq(solar.balanceOf(USER), 4);
+    }
+
+    function test_fulfillRequest_FillSeveralOtherRequests() public {
+        uint256 targetBlock = block.number + 10;
+        vm.prank(OWNER);
+        solar.addAsset(KIWI);
+        vm.startPrank(USER);
+        solar.requestMint{value: 0.03 ether}(targetBlock);
+        solar.requestMint{value: 0.03 ether}(targetBlock + 5);
+        solar.requestMint{value: 0.03 ether}(targetBlock + 10);
+        solar.requestMint{value: 0.03 ether}(targetBlock + 15);
+        vm.stopPrank();
+        vm.prank(USER2);
+        solar.fulfillRequest();
+
+        assertEq(solar.totalRemainingItems(), 80);
+        assertEq(solar.remainningItemAtIndex(1), 80);
+        assertEq(solar.balanceOf(USER), 0);
+    }
+
+    function test_fulfillRequest_PostponeOwnRequests() public {
+        uint256 targetBlock = block.number + 10;
+        vm.prank(OWNER);
+        solar.addAsset(KIWI);
+        vm.startPrank(USER);
+        solar.requestMint{value: 0.03 ether}(targetBlock);
+        solar.requestMint{value: 0.03 ether}(targetBlock + 5);
+        solar.requestMint{value: 0.03 ether}(targetBlock + 10);
+        solar.requestMint{value: 0.03 ether}(targetBlock + 15);
+        vm.roll(block.number + 300);
+        solar.fulfillRequest();
+
+        assertEq(solar.totalRemainingItems(), 84);
+        assertEq(solar.remainningItemAtIndex(1), 84);
+        assertEq(solar.balanceOf(USER), 0);
+
+        uint256[] memory requestList = solar.requestList();
+        assertEq(requestList.length, 4);
+        for (uint256 i; i < requestList.length; i++) {
+            assertEq(workaround_readRequestOwner(requestList[i]), USER);
+            assertApproxEqAbs(
+                workaround_readRequestBlock(requestList[i]),
+                block.number + 3000,
+                10
+            );
+        }
+    }
+
+    function test_fulfillRequest_PostponeOtherRequests() public {
+        uint256 targetBlock = block.number + 10;
+        vm.prank(OWNER);
+        solar.addAsset(KIWI);
+        vm.startPrank(USER);
+        solar.requestMint{value: 0.03 ether}(targetBlock);
+        solar.requestMint{value: 0.03 ether}(targetBlock + 5);
+        solar.requestMint{value: 0.03 ether}(targetBlock + 10);
+        solar.requestMint{value: 0.03 ether}(targetBlock + 15);
+        vm.stopPrank();
+        vm.prank(USER2);
+        vm.roll(block.number + 300);
+        solar.fulfillRequest();
+
+        assertEq(solar.totalRemainingItems(), 84);
+        assertEq(solar.remainningItemAtIndex(1), 84);
+        assertEq(solar.balanceOf(USER), 0);
+
+        uint256[] memory requestList = solar.requestList();
+        assertEq(requestList.length, 4);
+        for (uint256 i; i < requestList.length; i++) {
+            assertEq(workaround_readRequestOwner(requestList[i]), USER);
+            assertApproxEqAbs(
+                workaround_readRequestBlock(requestList[i]),
+                block.number + 3000,
+                10
+            );
+        }
+    }
+
+    /*/////////////////////////////////////////////////
+                        WORKAROUNDS
+    /////////////////////////////////////////////////*/
+    function workaround_readRequestOwner(uint256 request)
+        internal
+        pure
+        returns (address)
+    {
+        return address(uint160(request >> 96));
+    }
+
+    function workaround_readRequestBlock(uint256 request)
+        internal
+        pure
+        returns (uint256)
+    {
+        return uint96(request);
+    }
 }
