@@ -6,6 +6,10 @@ import "openzeppelin-contracts/contracts/utils/Strings.sol";
 
 import "src/utils/HexadecimalColor.sol";
 
+/**
+ * @notice Used to construct SolarPunk frame, it could evolve
+ * to a more generic librairy to construct more complex SVG.
+ * */
 library SolarPunkFrameSVG {
     using Strings for uint8;
     using HexadecimalColor for uint24;

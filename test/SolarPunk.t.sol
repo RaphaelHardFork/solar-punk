@@ -55,8 +55,8 @@ contract SolarPunk_test is Test {
     }
 
     function test_constructor_NameAndOwnerShip() public {
-        assertEq(solar.name(), "SolarPunk");
-        assertEq(solar.symbol(), "SPK");
+        assertEq(solar.name(), "SolarPunk v0.1");
+        assertEq(solar.symbol(), "SPKv0.1");
         assertEq(solar.owner(), OWNER);
     }
 

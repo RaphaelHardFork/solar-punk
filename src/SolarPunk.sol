@@ -34,10 +34,11 @@ contract SolarPunk is ERC721Enumerable, Ownable {
     mapping(uint256 => address) private _assetByIndex;
     mapping(uint256 => SwapAndPop.Box) private _assetsBoxesByIndex;
     mapping(address => uint256[]) private _itemsToMint;
+
     EnumerableSet.UintSet private _requestList;
     EnumerableSet.UintSet private _activeIndexList;
 
-    constructor(address owner) ERC721("SolarPunk", "SPK") {
+    constructor(address owner) ERC721("SolarPunk v0.1", "SPKv0.1") {
         transferOwnership(owner);
     }
 
@@ -52,18 +53,17 @@ contract SolarPunk is ERC721Enumerable, Ownable {
      * @param blockNumber future block number committed
      * */
     function requestMint(uint256 blockNumber) external payable {
-        // check input value
+        // check request meet requirements
         if (blockNumber <= block.number || blockNumber > block.number + 72000)
             revert OutOfBlockRange(blockNumber);
         if (msg.value < 0.03 ether) revert ValueBelowExpected(msg.value);
         if (_requestList.length() > 100) revert RequestListTooLong();
         if (_availableItems == 0) revert NoAvailableItems();
+
         --_availableItems;
         ++_lastRequestId;
 
-        // TODO fulfill request for discount
-
-        // commit to a block
+        // commit to a future block
         uint256 request = createRequest(
             msg.sender,
             _lastRequestId,
@@ -71,7 +71,7 @@ contract SolarPunk is ERC721Enumerable, Ownable {
         );
         _requestList.add(request);
 
-        // refund overdue
+        // give change
         payable(msg.sender).sendValue(msg.value - 0.03 ether);
     }
 
@@ -80,6 +80,9 @@ contract SolarPunk is ERC721Enumerable, Ownable {
      * fulfill requests. If the request is owned by the user the
      * item is minted. The request can be erroned, in this case
      * the request is postponed.
+     *
+     * TODO reward fulfilling of others AND give choice to fulfill
+     * only owned request
      * */
     function fulfillRequest() external {
         uint256 length = _requestList.length();
@@ -88,7 +91,11 @@ contract SolarPunk is ERC721Enumerable, Ownable {
         _fulfillRequests(length);
     }
 
-    /// @dev avoid big list!
+    /**
+     * @notice Allow users to mint item in their pending
+     * list. This latter is filled when an user fulfill request
+     * of others.
+     * */
     function mintPendingItems() external {
         uint256[] memory pendingItem = _itemsToMint[msg.sender];
         for (uint256 i; i < pendingItem.length; ) {
@@ -100,6 +107,15 @@ contract SolarPunk is ERC721Enumerable, Ownable {
         delete _itemsToMint[msg.sender];
     }
 
+    /**
+     * @notice Allow owner to add a new `assets` contract, which
+     * should be a new design.
+     *
+     * TODO maybe the contract impl should be checked AND the maximal
+     * amount of `assets` must be caped to 22.
+     * WARNING a counter for assets should be set otherwise it override
+     * previous `assets` when empty
+     * */
     function addAsset(address assetAddr) external onlyOwner {
         // check addr? onlyOwner
         uint256 length = _activeIndexList.length();
@@ -119,10 +135,13 @@ contract SolarPunk is ERC721Enumerable, Ownable {
     /*////////////////////////////
                 GETTERS
     ////////////////////////////*/
+
+    /// @return requests list (`uint256[] memory`)
     function requestList() external view returns (uint256[] memory) {
         return _requestList.values();
     }
 
+    /// @return list of pending mints of an user (`uint256[] memory`)
     function pendingMints(address account)
         external
         view
@@ -131,14 +150,17 @@ contract SolarPunk is ERC721Enumerable, Ownable {
         return _itemsToMint[account];
     }
 
+    /// @return WARN index for assets should be set
     function numberOfAssets() external view returns (uint256) {
         return _activeIndexList.length();
     }
 
+    /// @return number of items available to request (`uint256`)
     function availableItems() external view returns (uint256) {
         return _availableItems;
     }
 
+    /// @return remaining item for a specific `assets` (`uint256`)
     function remainningItemAtIndex(uint256 index)
         external
         view
@@ -148,6 +170,7 @@ contract SolarPunk is ERC721Enumerable, Ownable {
         return _assetsBoxesByIndex[index].itemsAmount;
     }
 
+    /// @return totalItem total remaining item among all assets (`uint256`)
     function totalRemainingItems() external view returns (uint256 totalItem) {
         for (uint256 i; i < _activeIndexList.length(); ) {
             totalItem += _assetsBoxesByIndex[_activeIndexList.at(i)]
@@ -158,6 +181,13 @@ contract SolarPunk is ERC721Enumerable, Ownable {
         }
     }
 
+    /**
+     * @notice This function return the NFT metadata as base64 encoded string
+     *
+     * @dev When the function is called the base64 encoded string is created
+     * with information encoded in the tokenID. The result should be cached
+     * to avoid long rendering.
+     */
     function tokenURI(uint256 tokenId)
         public
         view
@@ -175,22 +205,32 @@ contract SolarPunk is ERC721Enumerable, Ownable {
             INTERNAL FUNCTIONS
     ////////////////////////////*/
     /**
-     * @notice Take an item from available item and return
-     * NFT metadata packed into an `uint256`
+     * @dev First select an assets where to draw an item, then draw it
+     * using the {SwapAndPop} library. And finally encode NFT informations
+     * into the tokenID
+     *
+     * @return unique encoded tokenID
      */
     function _drawAndTransform(uint256 randNum) internal returns (uint256) {
-        // draw
         uint256 index = _activeIndexList.at(
             randNum % _activeIndexList.length()
         );
         uint256 itemId = _assetsBoxesByIndex[index].draw(randNum);
 
-        // transform
         return SolarPunkService.transformItemId(index, itemId);
     }
 
-    event log(uint256 a);
-
+    /**
+     * @dev Fulfill the request if the blockNumber is in the
+     * range `[(block.number - 256):block.number)`.
+     * A fulfilled request is either minted if the request owner
+     * is the `sender`, or `drawed` and stored in the request owner's
+     * pending mint list.
+     *
+     * If a requets is erroned (more than 256 block passed), the request is postponed.
+     * As {EnumarableSet} use the swap and pop method the postponed request
+     * replace the erroned one. Thus the loop just need to increase index
+     */
     function _fulfillRequests(uint256 length) internal {
         uint256 lastBlockhash = block.number - 256;
 
@@ -237,6 +277,15 @@ contract SolarPunk is ERC721Enumerable, Ownable {
         }
     }
 
+    /**
+     * @dev workaround to pack request information into an `uint256`
+     *
+     * @param owner address of the request owner
+     * @param lastRequestId request counter
+     * @param blockNumber future block
+     *
+     * @return request as packed `uint256`
+     */
     function createRequest(
         address owner,
         uint256 lastRequestId,

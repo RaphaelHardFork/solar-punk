@@ -2,6 +2,11 @@
 
 pragma solidity ^0.8.13;
 
+/**
+ * @title HexadecimalColor
+ * @notice Library used to convert an `uint24` to his
+ * hexadecimal string representation starting with `#`
+ * */
 library HexadecimalColor {
     bytes16 private constant _HEX_SYMBOLS = "0123456789ABCDEF";
 

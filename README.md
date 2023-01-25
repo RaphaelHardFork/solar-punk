@@ -1,13 +1,14 @@
 # Solar Punk
 
 TODO:
-- Document code, explain function and library
-- Write scripts for deployment on testnet
-- ForkTest with a marketplace (transfer and listing)
-- Explain technical choice in README
-- Verify contract on IPFS
-- Explain and test how SVG lib can be re used
-- Change design and deploy on mainnet
+- [x] Document code, explain function and library
+- [ ] Review naming for `assets` and add index for it
+- [ ] Write scripts for deployment on testnet
+- [ ] ForkTest with a marketplace (transfer and listing)
+- [ ] Explain technical choice in README
+- [ ] Verify contract on IPFS
+- [ ] Explain and test how SVG lib can be re used
+- [ ] Change design and deploy on mainnet
 
 ## Unit
 
@@ -22,9 +23,9 @@ TODO:
 | Rarété   | Nombre | Background         | Layer              | Animated | Figure |
 | -------- | ------ | ------------------ | ------------------ | -------- | ------ |
 | Phantom  | 1      | #000000 -> #aaaaaa | #000000 -> #aaaaaa | yes      | white  |
-| Elevated | 1      | #000000 -> #aaaaaa | #000000 -> #aaaaaa | yes      | black  |
+| Elevated | 2      | #000000 -> #aaaaaa | #000000 -> #aaaaaa | yes      | black  |
 | Dark     | 4      | #000000 -> #aaaaaa | #000000 -> #aaaaaa | No       | white  |
-| Gradient | 27     | #000000 -> #aaaaaa | #000000 -> #aaaaaa | No       | black  |
+| Gradient | 26     | #000000 -> #aaaaaa | #000000 -> #aaaaaa | No       | black  |
 | Uni      | 51     | #aaaaaa            | None               | No       | black  |
 
 **Encode metadata:**
