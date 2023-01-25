@@ -2,7 +2,8 @@
 
 TODO:
 - [x] Document code, explain function and library
-- [ ] Review naming for `assets` and add index for it
+- [x] Review naming for `assets` and add index for it
+- [x] Review SwapAndPop test suite
 - [ ] Write scripts for deployment on testnet
 - [ ] ForkTest with a marketplace (transfer and listing)
 - [ ] Explain technical choice in README

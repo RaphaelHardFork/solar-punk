@@ -4,33 +4,33 @@ pragma solidity ^0.8.13;
 
 import {MetadataEncoder} from "src/utils/MetadataEncoder.sol";
 import {SolarPunkFrameSVG} from "src/vectors/SolarPunkSVG.sol";
-import {IAsset} from "src/vectors/assets/IAsset.sol";
+import {IShape} from "src/vectors/shapes/IShape.sol";
 
 /// @title SolarPunkService
 /// @notice Library to construct on-chain SVG image
 library SolarPunkService {
     using SolarPunkFrameSVG for string;
 
-    struct Frame {
+    struct Gradient {
         uint24 colorA;
         uint24 colorB;
     }
 
-    struct Draw {
+    struct Image {
         bool animated;
-        uint24 figureColor;
-        Frame background;
-        Frame layer;
+        uint24 shapeColor;
+        Gradient background;
+        Gradient layer;
     }
 
     struct TokenID {
-        uint8 principe;
+        uint8 shapeId;
         uint8 tokenId;
         uint8 numberOfCopies;
-        Draw draw;
+        Image image;
     }
 
-    function encodedMetadata(uint256 tokenId, address figureAddr)
+    function encodedMetadata(uint256 tokenId, address shapeAddr)
         internal
         view
         returns (string memory)
@@ -39,12 +39,9 @@ library SolarPunkService {
 
         return
             MetadataEncoder.encodeMetadata(
-                IAsset(figureAddr).name(),
+                IShape(shapeAddr).name(),
                 rarityName(data.numberOfCopies),
-                createImage(
-                    data,
-                    IAsset(figureAddr).path(data.draw.figureColor)
-                )
+                createImage(data, IShape(shapeAddr).path(data.image.shapeColor))
             );
     }
 
@@ -60,7 +57,7 @@ library SolarPunkService {
         svgCode = svgCode.append(SolarPunkFrameSVG.HEADER);
         svgCode = svgCode.append(SolarPunkFrameSVG.BACKGROUND);
         svgCode = svgCode.append(
-            data.draw.animated
+            data.image.animated
                 ? SolarPunkFrameSVG.LAYER_ANIMATED
                 : SolarPunkFrameSVG.LAYER_STATIC
         );
@@ -72,8 +69,8 @@ library SolarPunkService {
         svgCode = svgCode.append(
             SolarPunkFrameSVG.linearGradient(
                 true,
-                data.draw.background.colorA,
-                data.draw.background.colorB
+                data.image.background.colorA,
+                data.image.background.colorB
             )
         );
 
@@ -81,8 +78,8 @@ library SolarPunkService {
             svgCode = svgCode.append(
                 SolarPunkFrameSVG.linearGradient(
                     false,
-                    data.draw.layer.colorA,
-                    data.draw.layer.colorB
+                    data.image.layer.colorA,
+                    data.image.layer.colorB
                 )
             );
         }
@@ -96,68 +93,68 @@ library SolarPunkService {
         returns (uint256)
     {
         TokenID memory data;
-        data.principe = uint8(principe);
+        data.shapeId = uint8(principe);
 
         // Rarity
         if (itemId < 51) {
             // uni
             data.tokenId = uint8(itemId + 1);
             data.numberOfCopies = 51;
-            data.draw.background.colorA = 0x223344;
-            data.draw.background.colorB = 0x223344;
+            data.image.background.colorA = 0x223344;
+            data.image.background.colorB = 0x223344;
         } else if (itemId >= 51 && itemId < 77) {
             // gradient
             itemId = itemId % 51;
             data.tokenId = uint8(itemId + 1);
             data.numberOfCopies = 26;
-            data.draw.background.colorA = 0xaabb44;
-            data.draw.background.colorB = 0x22ccdd;
-            data.draw.layer.colorA = 0xee55aa;
-            data.draw.layer.colorB = 0xaa0000;
+            data.image.background.colorA = 0xaabb44;
+            data.image.background.colorB = 0x22ccdd;
+            data.image.layer.colorA = 0xee55aa;
+            data.image.layer.colorB = 0xaa0000;
         } else if (itemId >= 77 && itemId < 82) {
             // dark
             itemId = (itemId % 51) % 26;
             data.tokenId = uint8(itemId + 1);
             data.numberOfCopies = 4;
-            data.draw.background.colorA = 0x114444;
-            data.draw.background.colorB = 0x226633;
-            data.draw.layer.colorA = 0x224477;
-            data.draw.layer.colorB = 0xaa22aa;
-            data.draw.figureColor = 0xffffff;
+            data.image.background.colorA = 0x114444;
+            data.image.background.colorB = 0x226633;
+            data.image.layer.colorA = 0x224477;
+            data.image.layer.colorB = 0xaa22aa;
+            data.image.shapeColor = 0xffffff;
         } else if (itemId == 81 || itemId == 82) {
             // elevated
             data.tokenId = 1;
             data.numberOfCopies = 2;
-            data.draw.animated = true;
-            data.draw.background.colorA = 0xaabb44;
-            data.draw.background.colorB = 0x22ccdd;
-            data.draw.layer.colorA = 0xee55aa;
-            data.draw.layer.colorB = 0xaa0000;
+            data.image.animated = true;
+            data.image.background.colorA = 0xaabb44;
+            data.image.background.colorB = 0x22ccdd;
+            data.image.layer.colorA = 0xee55aa;
+            data.image.layer.colorB = 0xaa0000;
         } else {
             // phantom
             data.tokenId = 1;
             data.numberOfCopies = 1;
-            data.draw.animated = true;
-            data.draw.background.colorA = 0x114444;
-            data.draw.background.colorB = 0x226633;
-            data.draw.layer.colorA = 0x224477;
-            data.draw.layer.colorB = 0xaa22aa;
-            data.draw.figureColor = 0xffffff;
+            data.image.animated = true;
+            data.image.background.colorA = 0x114444;
+            data.image.background.colorB = 0x226633;
+            data.image.layer.colorA = 0x224477;
+            data.image.layer.colorB = 0xaa22aa;
+            data.image.shapeColor = 0xffffff;
         }
 
         return
             uint256(
                 bytes32(
                     abi.encodePacked(
-                        data.principe,
+                        data.shapeId,
                         data.tokenId,
                         data.numberOfCopies,
-                        data.draw.animated,
-                        data.draw.figureColor,
-                        data.draw.background.colorA,
-                        data.draw.background.colorB,
-                        data.draw.layer.colorA,
-                        data.draw.layer.colorB
+                        data.image.animated,
+                        data.image.shapeColor,
+                        data.image.background.colorA,
+                        data.image.background.colorB,
+                        data.image.layer.colorA,
+                        data.image.layer.colorB
                     )
                 )
             );
@@ -168,15 +165,15 @@ library SolarPunkService {
         pure
         returns (TokenID memory data)
     {
-        data.principe = uint8(tokenId >> 248);
+        data.shapeId = uint8(tokenId >> 248);
         data.tokenId = uint8(tokenId >> 240);
         data.numberOfCopies = uint8(tokenId >> 232);
-        data.draw.animated = uint8(tokenId >> 224) == 0 ? false : true;
-        data.draw.figureColor = uint24(tokenId >> 200);
-        data.draw.background.colorA = uint24(tokenId >> 176);
-        data.draw.background.colorB = uint24(tokenId >> 152);
-        data.draw.layer.colorA = uint24(tokenId >> 128);
-        data.draw.layer.colorB = uint24(tokenId >> 104);
+        data.image.animated = uint8(tokenId >> 224) == 0 ? false : true;
+        data.image.shapeColor = uint24(tokenId >> 200);
+        data.image.background.colorA = uint24(tokenId >> 176);
+        data.image.background.colorB = uint24(tokenId >> 152);
+        data.image.layer.colorA = uint24(tokenId >> 128);
+        data.image.layer.colorB = uint24(tokenId >> 104);
     }
 
     function rarityName(uint256 numberOfCopies)

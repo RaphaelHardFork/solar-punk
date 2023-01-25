@@ -2,77 +2,94 @@
 pragma solidity ^0.8.13;
 
 import {Test, Vm} from "forge-std/Test.sol";
-import "src/structs/SwapAndPop.sol";
+import {SwapAndPop} from "src/structs/SwapAndPop.sol";
 
 contract SwapAndPop_test is Test {
-    using SwapAndPop for SwapAndPop.Box;
-    SwapAndPop.Box public box;
+    using SwapAndPop for SwapAndPop.Reserve;
+    SwapAndPop.Reserve public reserve;
 
     mapping(uint256 => bool) internal _isFind;
 
     function setUp() public {}
 
-    function testSetBox(uint256 listLength) public {
-        box.itemsAmount = listLength;
+    // cannot draw
+    // change stock in route
 
-        assertEq(box.itemsAmount, listLength);
+    function test_setup_SetEmptyBox(uint256 listLength) public {
+        reserve.stock = listLength;
+
+        assertEq(reserve.stock, listLength);
     }
 
-    function testDrawZero() public {
-        box.itemsAmount = 100;
-        uint256 drawed = box.draw(100);
+    /// @notice SHOULD NOT happen, add error
+    function test_setup_SetNotEmptyBox(uint256 itemAmount) public {
+        reserve.stock = itemAmount;
+        assertEq(reserve.stock, itemAmount);
+    }
 
-        assertEq(box.itemsId[0], 99);
+    function test_draw_CannotWhenEmpty() public {
+        vm.expectRevert(SwapAndPop.Empty.selector);
+        reserve.draw(5);
+    }
+
+    function test_draw_DrawZero() public {
+        reserve.stock = 100;
+        uint256 drawed = reserve.draw(100);
+
+        assertEq(reserve.itemsId[0], 99);
         assertEq(drawed, 0);
 
-        drawed = box.draw(0);
-        assertEq(box.itemsId[0], 98);
+        drawed = reserve.draw(0);
+        assertEq(reserve.itemsId[0], 98);
         assertEq(drawed, 99);
     }
 
-    function testPopOnly() public {
-        box.itemsAmount = 100;
-        uint256 drawed = box.draw(99);
+    function test_draw_PopOnly() public {
+        reserve.stock = 100;
+        uint256 drawed = reserve.draw(99);
 
-        assertEq(box.itemsId[99], 0);
+        assertEq(reserve.itemsId[99], 0);
         assertEq(drawed, 99);
 
-        drawed = box.draw(99);
+        drawed = reserve.draw(99);
         assertEq(drawed, 0);
     }
 
-    function testDraw(uint256 randNum) public {
+    function test_draw_DrawRandom(uint256 randNum) public {
         uint256 initialAmount = type(uint256).max;
-        box.itemsAmount = initialAmount;
-        uint256 index = randNum % box.itemsAmount;
-        uint256 lastItem = box.itemsAmount - 1;
+        reserve.stock = initialAmount;
+        uint256 index = randNum % reserve.stock;
+        uint256 lastItem = reserve.stock - 1;
 
-        uint256 drawed = box.draw(randNum); // = index
+        uint256 drawed = reserve.draw(randNum); // = index
 
         assertEq(drawed, index);
-        assertEq(box.itemsId[index], index != initialAmount - 1 ? lastItem : 0);
+        assertEq(
+            reserve.itemsId[index],
+            index != initialAmount - 1 ? lastItem : 0
+        );
     }
 
-    function testDrawAllItems() public {
-        box.itemsAmount = 100;
+    function test_draw_DrawAllItems() public {
+        reserve.stock = 100;
         uint256 drawed;
 
         for (uint256 i; i < 100; i++) {
-            drawed = box.draw(100 * (i + 10));
+            drawed = reserve.draw(100 * (i + 10));
             assertFalse(_isFind[drawed], "id finded");
             _isFind[drawed] = true;
         }
-        assertEq(box.itemsAmount, 0);
+        assertEq(reserve.stock, 0);
 
         for (uint256 i; i < 100; i++) {
-            assertEq(box.itemsId[i], 0);
+            assertEq(reserve.itemsId[i], 0);
         }
     }
 
-    function _printList(uint256 length) internal {
+    function workaround_printReserve(uint256 length) internal {
         emit log_string("List:");
         for (uint256 i; i < length; i++) {
-            emit log_uint(box.itemsId[i]);
+            emit log_uint(reserve.itemsId[i]);
         }
     }
 }

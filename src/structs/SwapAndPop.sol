@@ -7,15 +7,18 @@ pragma solidity ^0.8.13;
  * `uint256` used to draw (randomly) items.
  *
  * Declare a set state variables
- * SwapAndPop.Box private box;
+ * SwapAndPop.Reserve private reserve;
  *
  * Then use box.draw(randNum)
+ *
+ * @dev WARNING the librairy is permissive, a set of item can
+ * overrided by replacing the stock amount
  */
 library SwapAndPop {
     error Empty();
 
-    struct Box {
-        uint256 itemsAmount;
+    struct Reserve {
+        uint256 stock;
         mapping(uint256 => uint256) itemsId;
     }
 
@@ -23,33 +26,33 @@ library SwapAndPop {
      * @notice Use this function to remove one item from
      * the mapping
      *
-     * @param box Box struct stated in your contract
+     * @param reserve Reserve struct stated in your contract
      * @param randNum random number moduled by number of items
      */
-    function draw(Box storage box, uint256 randNum)
+    function draw(Reserve storage reserve, uint256 randNum)
         internal
         returns (uint256 itemId)
     {
         // check if items remainning
-        uint256 itemsAmount = box.itemsAmount;
+        uint256 itemsAmount = reserve.stock;
         if (itemsAmount == 0) revert Empty();
 
         // choose among available index
         uint256 index = randNum % itemsAmount;
 
         // assign item ID
-        itemId = box.itemsId[index];
+        itemId = reserve.itemsId[index];
         if (itemId == 0) itemId = index;
 
         // read last item ID
-        uint256 lastItem = box.itemsId[itemsAmount - 1];
+        uint256 lastItem = reserve.itemsId[itemsAmount - 1];
 
         // assign last item ID
         if (lastItem == 0) lastItem = itemsAmount - 1;
-        box.itemsId[index] = lastItem;
+        reserve.itemsId[index] = lastItem;
 
         // pop from the list
-        delete box.itemsId[itemsAmount - 1];
-        --box.itemsAmount;
+        delete reserve.itemsId[itemsAmount - 1];
+        --reserve.stock;
     }
 }
