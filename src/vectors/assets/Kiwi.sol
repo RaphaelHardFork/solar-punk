@@ -2,10 +2,10 @@
 
 pragma solidity ^0.8.13;
 
-import "./IFigure.sol";
-import "src/svg/HexadecimalColor.sol";
+import {IAsset} from "./IAsset.sol";
+import {HexadecimalColor} from "src/utils/HexadecimalColor.sol";
 
-contract Kiwi is IFigure {
+contract Kiwi is IAsset {
     using HexadecimalColor for uint24;
 
     string public constant name = "Kiwi";
