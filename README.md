@@ -1,5 +1,14 @@
 # Solar Punk
 
+TODO:
+- Document code, explain function and library
+- Write scripts for deployment on testnet
+- ForkTest with a marketplace (transfer and listing)
+- Explain technical choice in README
+- Verify contract on IPFS
+- Explain and test how SVG lib can be re used
+- Change design and deploy on mainnet
+
 ## Unit
 
 - 22 Figures:

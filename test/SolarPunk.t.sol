@@ -29,6 +29,9 @@ contract SolarPunk_test is Test {
     address internal constant OWNER = address(501);
     address internal constant USER = address(100);
     address internal constant USER2 = address(101);
+    address internal constant USER3 = address(102);
+    address internal constant USER4 = address(103);
+    address internal constant USER5 = address(104);
 
     address internal constant FIGURE1 = address(1);
     address internal constant FIGURE2 = address(2);
@@ -45,6 +48,9 @@ contract SolarPunk_test is Test {
 
         vm.deal(USER, 10000 ether);
         vm.deal(USER2, 10000 ether);
+        vm.deal(USER3, 10000 ether);
+        vm.deal(USER4, 10000 ether);
+        vm.deal(USER5, 10000 ether);
         vm.roll(100000);
     }
 
@@ -54,6 +60,13 @@ contract SolarPunk_test is Test {
         assertEq(solar.owner(), OWNER);
     }
 
+    /*////////////////////////////////////////////////////
+                    ASSETS DISTRIBUTION
+    ////////////////////////////////////////////////////*/
+
+    /*/////////////////////////////////////////////////
+                        addAsset()
+    /////////////////////////////////////////////////*/
     function test_addAsset_FirstOne() public {
         vm.prank(OWNER);
         solar.addAsset(KIWI);
@@ -82,6 +95,9 @@ contract SolarPunk_test is Test {
         assertEq(solar.numberOfAssets(), 1);
     }
 
+    /*/////////////////////////////////////////////////
+                        requestMint()
+    /////////////////////////////////////////////////*/
     function test_requestMint_CannotWhenWrongBlockRange() public {
         uint256 belowRange = block.number - 1;
         uint256 aboveRange = block.number + 72001;
@@ -116,18 +132,6 @@ contract SolarPunk_test is Test {
         vm.startPrank(USER);
         vm.expectRevert(NoAvailableItems.selector);
         solar.requestMint{value: 0.03 ether}(block.number + 1);
-    }
-
-    function test_requestMint_CannotRequestSameBlockNumber() public {
-        uint256 targetBlock = block.number + 10;
-        vm.prank(OWNER);
-        solar.addAsset(KIWI);
-        vm.startPrank(USER);
-        solar.requestMint{value: 0.03 ether}(targetBlock);
-        vm.expectRevert(
-            abi.encodeWithSelector(RequestAlreadyExist.selector, targetBlock)
-        );
-        solar.requestMint{value: 0.03 ether}(targetBlock);
     }
 
     function test_requestMint_RequestOneMint() public {
@@ -174,6 +178,34 @@ contract SolarPunk_test is Test {
         assertEq(USER.balance, balance - 0.03 ether);
     }
 
+    function test_requestMint_CannotExceedRequestLimit() public {
+        vm.prank(OWNER);
+        solar.addAsset(KIWI);
+        vm.prank(OWNER);
+        solar.addAsset(FIGURE1);
+
+        vm.startPrank(USER);
+        for (uint256 i; i <= 100; i++) {
+            solar.requestMint{value: 0.03 ether}(block.number + 10);
+        }
+        vm.expectRevert(RequestListTooLong.selector);
+        solar.requestMint{value: 0.03 ether}(block.number + 10);
+    }
+
+    function test_requestMint_RequestAllItem() public {
+        vm.prank(OWNER);
+        solar.addAsset(KIWI);
+        vm.startPrank(USER);
+        for (uint256 i; i < 84; i++) {
+            solar.requestMint{value: 0.03 ether}(block.number + 10);
+        }
+        vm.expectRevert(NoAvailableItems.selector);
+        solar.requestMint{value: 0.03 ether}(block.number + 10);
+    }
+
+    /*/////////////////////////////////////////////////
+                        fulfillRequest()
+    /////////////////////////////////////////////////*/
     function test_fulfillRequest_CannotWhenNoRequest() public {
         vm.prank(USER);
         vm.expectRevert(NoRequestToFulfill.selector);
@@ -186,6 +218,7 @@ contract SolarPunk_test is Test {
         solar.addAsset(KIWI);
         vm.startPrank(USER);
         solar.requestMint{value: 0.03 ether}(targetBlock);
+        vm.roll(block.number + 11);
         solar.fulfillRequest();
 
         assertEq(solar.totalRemainingItems(), 83);
@@ -199,6 +232,7 @@ contract SolarPunk_test is Test {
         solar.addAsset(KIWI);
         vm.prank(USER);
         solar.requestMint{value: 0.03 ether}(targetBlock);
+        vm.roll(block.number + 11);
         vm.prank(USER2);
         solar.fulfillRequest();
 
@@ -260,9 +294,10 @@ contract SolarPunk_test is Test {
         solar.addAsset(KIWI);
         vm.startPrank(USER);
         solar.requestMint{value: 0.03 ether}(targetBlock);
-        solar.requestMint{value: 0.03 ether}(targetBlock + 5);
-        solar.requestMint{value: 0.03 ether}(targetBlock + 10);
-        solar.requestMint{value: 0.03 ether}(targetBlock + 15);
+        solar.requestMint{value: 0.03 ether}(targetBlock);
+        solar.requestMint{value: 0.03 ether}(targetBlock);
+        solar.requestMint{value: 0.03 ether}(targetBlock);
+        vm.roll(block.number + 11);
         solar.fulfillRequest();
 
         assertEq(solar.totalRemainingItems(), 80);
@@ -276,10 +311,11 @@ contract SolarPunk_test is Test {
         solar.addAsset(KIWI);
         vm.startPrank(USER);
         solar.requestMint{value: 0.03 ether}(targetBlock);
-        solar.requestMint{value: 0.03 ether}(targetBlock + 5);
-        solar.requestMint{value: 0.03 ether}(targetBlock + 10);
-        solar.requestMint{value: 0.03 ether}(targetBlock + 15);
+        solar.requestMint{value: 0.03 ether}(targetBlock);
+        solar.requestMint{value: 0.03 ether}(targetBlock);
+        solar.requestMint{value: 0.03 ether}(targetBlock);
         vm.stopPrank();
+        vm.roll(block.number + 11);
         vm.prank(USER2);
         solar.fulfillRequest();
 
@@ -322,19 +358,22 @@ contract SolarPunk_test is Test {
         solar.addAsset(KIWI);
         vm.startPrank(USER);
         solar.requestMint{value: 0.03 ether}(targetBlock);
-        solar.requestMint{value: 0.03 ether}(targetBlock + 5);
-        solar.requestMint{value: 0.03 ether}(targetBlock + 10);
-        solar.requestMint{value: 0.03 ether}(targetBlock + 15);
+        solar.requestMint{value: 0.03 ether}(targetBlock);
+        solar.requestMint{value: 0.03 ether}(targetBlock);
+        solar.requestMint{value: 0.03 ether}(targetBlock);
         vm.stopPrank();
+        uint256[] memory requestList = solar.requestList();
+        assertEq(requestList.length, 4);
+
         vm.prank(USER2);
-        vm.roll(block.number + 300);
+        vm.roll(block.number + 3000);
         solar.fulfillRequest();
 
         assertEq(solar.totalRemainingItems(), 84);
         assertEq(solar.remainningItemAtIndex(1), 84);
         assertEq(solar.balanceOf(USER), 0);
 
-        uint256[] memory requestList = solar.requestList();
+        requestList = solar.requestList();
         assertEq(requestList.length, 4);
         for (uint256 i; i < requestList.length; i++) {
             assertEq(workaround_readRequestOwner(requestList[i]), USER);
@@ -344,6 +383,118 @@ contract SolarPunk_test is Test {
                 10
             );
         }
+    }
+
+    function test_fulfillRequest_LargeNumberOfRequest() public {
+        uint256 targetBlock = block.number + 10;
+        vm.prank(OWNER);
+        solar.addAsset(KIWI);
+        for (uint256 i; i < 15; i++) {
+            vm.prank(USER);
+            solar.requestMint{value: 0.03 ether}(targetBlock);
+            vm.prank(USER2);
+            solar.requestMint{value: 0.03 ether}(targetBlock);
+            vm.prank(USER3);
+            solar.requestMint{value: 0.03 ether}(targetBlock);
+            vm.prank(USER4);
+            solar.requestMint{value: 0.03 ether}(targetBlock);
+            vm.prank(USER5);
+            solar.requestMint{value: 0.03 ether}(targetBlock);
+        }
+        uint256[] memory requestList = solar.requestList();
+        assertEq(requestList.length, 5 * 15);
+        vm.roll(block.number + 11);
+        vm.prank(USER2);
+        solar.fulfillRequest();
+
+        assertEq(solar.balanceOf(USER2), 15);
+        requestList = solar.requestList();
+        assertEq(requestList.length, 0);
+        assertEq(solar.pendingMints(USER).length, 15);
+        assertEq(solar.pendingMints(USER2).length, 0);
+        assertEq(solar.pendingMints(USER3).length, 15);
+        assertEq(solar.pendingMints(USER4).length, 15);
+        assertEq(solar.pendingMints(USER5).length, 15);
+    }
+
+    function test_fulfillRequest_FulfillAndMintAllItem() public {
+        vm.prank(OWNER);
+        solar.addAsset(KIWI);
+        vm.startPrank(USER);
+        for (uint256 i; i < 84; i++) {
+            solar.requestMint{value: 0.03 ether}(block.number + 10);
+        }
+        vm.roll(block.number + 11);
+        solar.fulfillRequest();
+
+        assertEq(solar.balanceOf(USER), 84);
+        assertEq(solar.totalRemainingItems(), 0);
+        assertEq(solar.remainningItemAtIndex(1), 0);
+    }
+
+    /*/////////////////////////////////////////////////
+                    mintPendingItems()
+    /////////////////////////////////////////////////*/
+    function test_mintPendingItems_OneItemPending() public {
+        uint256 targetBlock = block.number + 10;
+        vm.prank(OWNER);
+        solar.addAsset(KIWI);
+        vm.prank(USER);
+        solar.requestMint{value: 0.03 ether}(targetBlock);
+        vm.roll(block.number + 11);
+        vm.prank(USER2);
+        solar.fulfillRequest();
+
+        assertEq(solar.balanceOf(USER), 0);
+        assertEq(solar.pendingMints(USER).length, 1);
+        assertEq(solar.totalSupply(), 0);
+
+        vm.prank(USER);
+        solar.mintPendingItems();
+
+        assertEq(solar.balanceOf(USER), 1);
+        assertEq(solar.pendingMints(USER).length, 0);
+    }
+
+    function test_mintPendingItems_SeveralItemsPending() public {
+        uint256 targetBlock = block.number + 10;
+        vm.prank(OWNER);
+        solar.addAsset(KIWI);
+        for (uint256 i; i < 15; i++) {
+            vm.prank(USER);
+            solar.requestMint{value: 0.03 ether}(targetBlock);
+        }
+        vm.roll(block.number + 11);
+        vm.prank(USER2);
+        solar.fulfillRequest();
+
+        assertEq(solar.balanceOf(USER), 0);
+        assertEq(solar.pendingMints(USER).length, 15);
+        assertEq(solar.totalSupply(), 0);
+
+        vm.prank(USER);
+        solar.mintPendingItems();
+
+        assertEq(solar.balanceOf(USER), 15);
+        assertEq(solar.pendingMints(USER).length, 0);
+    }
+
+    /*/////////////////////////////////////////////////
+                        ASSETS RENDERING
+    /////////////////////////////////////////////////*/
+    function test_tokenURI_CanReachAssetContract() public {
+        uint256 targetBlock = block.number + 1;
+        vm.prank(OWNER);
+        solar.addAsset(KIWI);
+        vm.prank(USER);
+        solar.requestMint{value: 0.03 ether}(targetBlock);
+        vm.roll(block.number + 2);
+        vm.prank(USER);
+        solar.fulfillRequest();
+
+        uint256 tokenId = solar.tokenOfOwnerByIndex(USER, 0);
+        vm.expectCall(KIWI, abi.encodeWithSignature("name()"));
+        solar.tokenURI(tokenId);
     }
 
     /*/////////////////////////////////////////////////
@@ -362,6 +513,6 @@ contract SolarPunk_test is Test {
         pure
         returns (uint256)
     {
-        return uint96(request);
+        return uint64(request);
     }
 }
