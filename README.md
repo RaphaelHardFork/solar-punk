@@ -1,15 +1,22 @@
 # Solar Punk
 
 TODO:
+
 - [x] Document code, explain function and library
 - [x] Review naming for `assets` and add index for it
 - [x] Review SwapAndPop test suite
-- [ ] Write scripts for deployment on testnet
+- [x] Write scripts for deployment on testnet
+- [ ] Deploy,test,destruct on Goerli
 - [ ] ForkTest with a marketplace (transfer and listing)
 - [ ] Explain technical choice in README
 - [ ] Verify contract on IPFS
 - [ ] Explain and test how SVG lib can be re used
 - [ ] Change design and deploy on mainnet
+
+IMPROVMENT:
+
+- [ ] Allow to fill only sender requests
+- [ ] Refund gas for filling request of others
 
 ## Unit
 

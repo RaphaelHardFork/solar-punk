@@ -45,7 +45,7 @@ contract SolarPunk is ERC721Enumerable, Ownable {
     EnumerableSet.UintSet private _activeShapeList;
 
     constructor(address owner) ERC721("SolarPunk v0.1", "SPKv0.1") {
-        transferOwnership(owner);
+        if (msg.sender != owner) transferOwnership(owner);
         cost = 0.03 ether;
     }
 
