@@ -6,7 +6,8 @@ import "forge-std/Script.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 
 import {ArtifactWriter} from "script/utils/ArtifactWriter.sol";
-import {SolarPunk} from "src/SolarPunk.sol";
+import {SolarPunkDestructible} from "script/test_contracts/SolarPunkDestructible.sol";
+import {Kiwi} from "src/vectors/shapes/Kiwi.sol";
 
 contract deploy is Script, ArtifactWriter {
     using Strings for uint256;
@@ -22,18 +23,27 @@ contract deploy is Script, ArtifactWriter {
 
         vm.startBroadcast(pk);
 
-        // SolarPunk solarPunk = new SolarPunk(DEPLOYER);
+        // SolarPunkDestructible solarPunk = new SolarPunkDestructible();
+        // Kiwi kiwi = new Kiwi();
+        // solarPunk.addAsset(0x51Ab5BACfaBF7Df56D6E845DdF92D6e8cA4C7520);
+
+        SolarPunkDestructible solarPunk = SolarPunkDestructible(
+            0x5c70a094856A64a160308526c00e529C60992469
+        );
+        for (uint256 i; i < 20; i++) {
+            solarPunk.requestMint{value: solarPunk.cost()}(block.number + 20);
+        }
 
         vm.stopBroadcast();
 
-        // writeArtifact(
-        //     "SolarPunk",
-        //     DEPLOYER,
-        //     address(solarPunk),
-        //     abi.encodeWithSignature("constructor(address)", DEPLOYER),
-        //     false,
-        //     address(0)
-        // );
+        writeArtifact(
+            "SolarPunkDestructible",
+            DEPLOYER,
+            address(solarPunk),
+            abi.encode(0),
+            false,
+            address(0)
+        );
     }
 
     /// @notice util to log the deployment environment

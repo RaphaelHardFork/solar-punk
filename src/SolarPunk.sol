@@ -44,9 +44,9 @@ contract SolarPunk is ERC721Enumerable, Ownable {
     EnumerableSet.UintSet private _requestList;
     EnumerableSet.UintSet private _activeShapeList;
 
-    constructor(address owner) ERC721("SolarPunk v0.1", "SPKv0.1") {
+    constructor(address owner) ERC721("SolarPunk v0.4", "SPKv0.4") {
         if (msg.sender != owner) transferOwnership(owner);
-        cost = 0.03 ether;
+        cost = 0.000003 ether;
     }
 
     /*////////////////////////////
@@ -198,7 +198,7 @@ contract SolarPunk is ERC721Enumerable, Ownable {
         address shapeAddr = _shapesAddr[index];
         if (shapeAddr == address(0)) revert InexistantAsset(index);
 
-        return SolarPunkService.encodedMetadata(tokenId, shapeAddr);
+        return SolarPunkService.renderMetadata(tokenId, shapeAddr);
     }
 
     /*////////////////////////////

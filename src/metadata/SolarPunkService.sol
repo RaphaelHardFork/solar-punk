@@ -3,13 +3,14 @@
 pragma solidity ^0.8.13;
 
 import {MetadataEncoder} from "src/utils/MetadataEncoder.sol";
+import {SolarPunkProperties} from "src/metadata/SolarPunkProperties.sol";
 import {SolarPunkFrameSVG} from "src/vectors/SolarPunkSVG.sol";
 import {IShape} from "src/vectors/shapes/IShape.sol";
 
 /// @title SolarPunkService
-/// @notice Library to construct on-chain SVG image
+/// @notice Library to construct SolarPunks on-chain SVG image and metadata
 library SolarPunkService {
-    using SolarPunkFrameSVG for string;
+    using MetadataEncoder for string;
 
     struct Gradient {
         uint24 colorA;
@@ -30,18 +31,37 @@ library SolarPunkService {
         Image image;
     }
 
-    function encodedMetadata(uint256 tokenId, address shapeAddr)
+    function renderMetadata(uint256 tokenId, address shapeAddr)
         internal
         view
         returns (string memory)
     {
         TokenID memory data = decodeTokenId(tokenId);
+        (string memory rarity, string memory rarityDescrition) = rarityDetails(
+            data.numberOfCopies
+        );
+
+        // render name & description
+        string memory name = string.concat(
+            SolarPunkProperties.NAME_PRIMER,
+            IShape(shapeAddr).name(),
+            rarity
+        );
+
+        string memory description = string.concat(
+            SolarPunkProperties.DESCRIPTION_PRIMER,
+            rarityDescrition
+        );
 
         return
             MetadataEncoder.encodeMetadata(
-                IShape(shapeAddr).name(),
-                rarityName(data.numberOfCopies),
-                createImage(data, IShape(shapeAddr).path(data.image.shapeColor))
+                name,
+                description,
+                createImage(
+                    data,
+                    IShape(shapeAddr).path(data.image.shapeColor)
+                ),
+                SolarPunkProperties.EXTERNAL_URL
             );
     }
 
@@ -74,7 +94,7 @@ library SolarPunkService {
             )
         );
 
-        if (data.numberOfCopies > 51) {
+        if (data.numberOfCopies < 51) {
             svgCode = svgCode.append(
                 SolarPunkFrameSVG.linearGradient(
                     false,
@@ -111,7 +131,7 @@ library SolarPunkService {
             data.image.background.colorB = 0x22ccdd;
             data.image.layer.colorA = 0xee55aa;
             data.image.layer.colorB = 0xaa0000;
-        } else if (itemId >= 77 && itemId < 82) {
+        } else if (itemId >= 77 && itemId < 81) {
             // dark
             itemId = (itemId % 51) % 26;
             data.tokenId = uint8(itemId + 1);
@@ -123,7 +143,7 @@ library SolarPunkService {
             data.image.shapeColor = 0xffffff;
         } else if (itemId == 81 || itemId == 82) {
             // elevated
-            data.tokenId = 1;
+            data.tokenId = itemId == 81 ? 1 : 2;
             data.numberOfCopies = 2;
             data.image.animated = true;
             data.image.background.colorA = 0xaabb44;
@@ -176,15 +196,19 @@ library SolarPunkService {
         data.image.layer.colorB = uint24(tokenId >> 104);
     }
 
-    function rarityName(uint256 numberOfCopies)
+    function rarityDetails(uint256 numberOfCopies)
         internal
         pure
-        returns (string memory)
+        returns (string memory, string memory)
     {
-        if (numberOfCopies == 51) return "Uni";
-        if (numberOfCopies == 26) return "Gradient";
-        if (numberOfCopies == 4) return "Dark";
-        if (numberOfCopies == 2) return "Elevated";
-        return "Phantom";
+        if (numberOfCopies == 51)
+            return ("Uni", SolarPunkProperties.DESCRIPTION_UNI);
+        if (numberOfCopies == 26)
+            return ("Gradient", SolarPunkProperties.DESCRIPTION_GRADIENT);
+        if (numberOfCopies == 4)
+            return ("Dark", SolarPunkProperties.DESCRIPTION_DARK);
+        if (numberOfCopies == 2)
+            return ("Elevated", SolarPunkProperties.DESCRIPTION_ELEVATED);
+        return ("Phantom", SolarPunkProperties.DESCRIPTION_PHANTOM);
     }
 }

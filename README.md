@@ -6,8 +6,9 @@ TODO:
 - [x] Review naming for `assets` and add index for it
 - [x] Review SwapAndPop test suite
 - [x] Write scripts for deployment on testnet
-- [ ] Deploy,test,destruct on Goerli
-- [ ] ForkTest with a marketplace (transfer and listing)
+- [x] Deploy,test,destruct on Goerli
+- [ ] Contract URI + image (design it)
+- [ ] ~~ForkTest with a marketplace (transfer and listing)~~
 - [ ] Explain technical choice in README
 - [ ] Verify contract on IPFS
 - [ ] Explain and test how SVG lib can be re used
@@ -15,6 +16,7 @@ TODO:
 
 IMPROVMENT:
 
+- [ ] Next blocks request released (instead of request list or +)
 - [ ] Allow to fill only sender requests
 - [ ] Refund gas for filling request of others
 

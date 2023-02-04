@@ -72,12 +72,4 @@ library SolarPunkFrameSVG {
                 "</linearGradient>"
             );
     }
-
-    function append(string memory svgCode, string memory element)
-        internal
-        pure
-        returns (string memory)
-    {
-        return string.concat(svgCode, element);
-    }
 }

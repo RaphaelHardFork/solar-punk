@@ -1,10 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
+import "openzeppelin-contracts/contracts/utils/Base64.sol";
+import "openzeppelin-contracts/contracts/utils/Strings.sol";
+
 import {Roles} from "./base/Roles.sol";
 import {BaseSolarPunk, SolarPunk} from "./base/BaseSolarPunk.sol";
 
 contract SolarPunk_test is BaseSolarPunk, Roles {
+    using Strings for uint256;
+
     function setUp() public {
         _deploy_solarPunk(OWNER);
         _deploy_kiwi();
@@ -14,8 +19,8 @@ contract SolarPunk_test is BaseSolarPunk, Roles {
     }
 
     function test_constructor_NameAndOwnerShip() public {
-        assertEq(solar.name(), "SolarPunk v0.1");
-        assertEq(solar.symbol(), "SPKv0.1");
+        assertEq(solar.name(), "SolarPunk v0.4");
+        assertEq(solar.symbol(), "SPKv0.4");
         assertEq(solar.owner(), OWNER);
     }
 
@@ -136,7 +141,7 @@ contract SolarPunk_test is BaseSolarPunk, Roles {
         vm.startPrank(USERS[0]);
         solar.requestMint{value: 1 ether}(block.number + 10);
 
-        assertEq(USERS[0].balance, balance - 0.03 ether);
+        assertEq(USERS[0].balance, balance - PRICE);
     }
 
     function test_requestMint_CannotExceedRequestLimit() public {
@@ -456,6 +461,27 @@ contract SolarPunk_test is BaseSolarPunk, Roles {
         uint256 tokenId = solar.tokenOfOwnerByIndex(USERS[0], 0);
         vm.expectCall(KIWI, abi.encodeWithSignature("name()"));
         solar.tokenURI(tokenId);
+    }
+
+    function test_tokenURI_WriteAllURIs() public {
+        vm.prank(OWNER);
+        solar.addAsset(KIWI);
+        // mint all token
+        vm.startPrank(USERS[0]);
+        for (uint256 i; i < 84; i++) {
+            solar.requestMint{value: 0.03 ether}(block.number + 10);
+        }
+        vm.roll(block.number + 15);
+        solar.fulfillRequest();
+        assertEq(solar.totalSupply(), 84);
+
+        for (uint256 i; i < 84; i++) {
+            uint256 tokenId = solar.tokenOfOwnerByIndex(USERS[0], i);
+            vm.writeFile(
+                string.concat("cache/metadatas/raw/", i.toString()),
+                solar.tokenURI(tokenId)
+            );
+        }
     }
 
     /*/////////////////////////////////////////////////

@@ -2,48 +2,59 @@
 
 pragma solidity ^0.8.13;
 
-import "openzeppelin-contracts/contracts/utils/Base64.sol";
+import {Base64} from "openzeppelin-contracts/contracts/utils/Base64.sol";
+import {MetadataProperties} from "src/metadata/MetadataProperties.sol";
 
-/**
- * @notice Librairy used to write and encode SolarPunk metadata into the
- * blockchain. It could evolve to create more generic NFT metadata.
- * */
+/// @title Librairy used to write and encode on-chain metadata
 library MetadataEncoder {
-    string internal constant HEADER = '"data:application/json;base64,';
-    string internal constant PRE_NAME = '{"name":"Solar punk ';
-    string internal constant POST_NAME = '",';
-    string internal constant DESCRIPTION =
-        '"description":"This collection is a set of 22 SolarPunk, declined into 84 edition of each with different rarity.\n\nSolarPunk propose a future were technologies helping increase human being, support SolarPunks!",'; // Should change?
-    string internal constant PRE_IMAGE = '"image":"';
-    string internal constant POST_IMAGE = '"}';
+    using MetadataEncoder for string;
 
     function encodeMetadata(
         string memory name,
-        string memory rarity,
-        string memory svgCode
+        string memory description,
+        string memory image,
+        string memory externalUrl
     ) internal pure returns (string memory) {
         return
             string(
                 abi.encodePacked(
-                    HEADER,
+                    MetadataProperties.HEADER,
                     Base64.encode(
-                        abi.encodePacked(
-                            PRE_NAME,
+                        _jsonFile(
                             name,
-                            " ",
-                            rarity,
-                            POST_NAME,
-                            DESCRIPTION,
-                            PRE_IMAGE,
-                            encodeImage(svgCode),
-                            POST_IMAGE
+                            description,
+                            encodeSVG(image),
+                            externalUrl
                         )
                     )
                 )
             );
     }
 
-    function encodeImage(string memory svgCode)
+    function _jsonFile(
+        string memory name,
+        string memory description,
+        string memory image,
+        string memory externalUrl
+    ) internal pure returns (bytes memory) {
+        string memory jsonString;
+        jsonString = jsonString.append(MetadataProperties.OPEN_JSON);
+        jsonString = jsonString.append(MetadataProperties.PRE_NAME);
+        jsonString = jsonString.append(name);
+        jsonString = jsonString.append(MetadataProperties.NEXT_ATTRIBUTE);
+        jsonString = jsonString.append(MetadataProperties.PRE_DESCRIPTION);
+        jsonString = jsonString.append(description);
+        jsonString = jsonString.append(MetadataProperties.NEXT_ATTRIBUTE);
+        jsonString = jsonString.append(MetadataProperties.PRE_IMAGE);
+        jsonString = jsonString.append(image);
+        jsonString = jsonString.append(MetadataProperties.NEXT_ATTRIBUTE);
+        jsonString = jsonString.append(MetadataProperties.PRE_EXTERNAL_URL);
+        jsonString = jsonString.append(externalUrl);
+        jsonString = jsonString.append(MetadataProperties.CLOSE_JSON);
+        return abi.encodePacked(jsonString);
+    }
+
+    function encodeSVG(string memory svgCode)
         internal
         pure
         returns (string memory)
@@ -51,9 +62,17 @@ library MetadataEncoder {
         return
             string(
                 abi.encodePacked(
-                    "data:image/svg+xml;base64,",
+                    MetadataProperties.SVG_HEADER,
                     Base64.encode(bytes(svgCode))
                 )
             );
+    }
+
+    function append(string memory baseString, string memory element)
+        internal
+        pure
+        returns (string memory)
+    {
+        return string.concat(baseString, element);
     }
 }

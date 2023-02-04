@@ -1,0 +1,9 @@
+{
+  "name": "solarPunk",
+  "type": "module",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:RaphaelHardFork/solarPunk.git",
+  "author": "raphael <raphael.pellet@protonmail.com>",
+  "license": "MIT"
+}
