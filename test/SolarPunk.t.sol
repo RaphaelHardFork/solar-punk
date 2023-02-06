@@ -13,6 +13,7 @@ contract SolarPunk_test is BaseSolarPunk, Roles {
     function setUp() public {
         _deploy_solarPunk(OWNER);
         _deploy_kiwi();
+        _deploy_dragonfly();
         _newUsersSet(50, 5);
 
         vm.roll(100000);
@@ -398,6 +399,21 @@ contract SolarPunk_test is BaseSolarPunk, Roles {
         assertEq(solar.remainningItemOfShape(1), 0);
     }
 
+    function test_fulfillRequest_FulfillSeveralShapeDistributionOnSameBlock()
+        public
+    {
+        vm.prank(OWNER);
+        solar.addAsset(KIWI);
+        vm.prank(OWNER);
+        solar.addAsset(DRAGONFLY);
+        vm.startPrank(USERS[0]);
+        for (uint256 i; i < 50; i++) {
+            solar.requestMint{value: 0.03 ether}(block.number + 10);
+        }
+        vm.roll(block.number + 11);
+        solar.fulfillRequest();
+    }
+
     /*/////////////////////////////////////////////////
                     mintPendingItems()
     /////////////////////////////////////////////////*/
@@ -466,6 +482,9 @@ contract SolarPunk_test is BaseSolarPunk, Roles {
     function test_tokenURI_WriteAllURIs() public {
         vm.prank(OWNER);
         solar.addAsset(KIWI);
+        vm.prank(OWNER);
+        solar.addAsset(DRAGONFLY);
+        assertEq(solar.numberOfShapes(), 2);
         // mint all token
         vm.startPrank(USERS[0]);
         for (uint256 i; i < 84; i++) {
@@ -473,15 +492,28 @@ contract SolarPunk_test is BaseSolarPunk, Roles {
         }
         vm.roll(block.number + 15);
         solar.fulfillRequest();
-        assertEq(solar.totalSupply(), 84);
-
         for (uint256 i; i < 84; i++) {
+            solar.requestMint{value: 0.03 ether}(block.number + 10);
+        }
+        assertEq(solar.totalSupply(), 84);
+        vm.roll(block.number + 15);
+        solar.fulfillRequest();
+        assertEq(solar.totalSupply(), 168);
+
+        for (uint256 i; i < 168; i++) {
             uint256 tokenId = solar.tokenOfOwnerByIndex(USERS[0], i);
             vm.writeFile(
                 string.concat("cache/metadatas/raw/", i.toString()),
                 solar.tokenURI(tokenId)
             );
         }
+        vm.writeFile("cache/metadatas/raw/contract", solar.contractURI());
+    }
+
+    function test_contractURI_RenderContractDetails() public {
+        vm.prank(OWNER);
+        solar.addAsset(KIWI);
+        solar.contractURI();
     }
 
     /*/////////////////////////////////////////////////

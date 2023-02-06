@@ -7,7 +7,8 @@ TODO:
 - [x] Review SwapAndPop test suite
 - [x] Write scripts for deployment on testnet
 - [x] Contract URI + image (design it)
-- [ ] Deploy,test,destruct on Goerli
+- [x] Deploy,test,destruct on Goerli
+- [x] Randomness on same block requested
 - [ ] ~~ForkTest with a marketplace (transfer and listing)~~
 - [ ] Explain technical choice in README
 - [ ] Explain and test how SVG lib can be re used
@@ -101,7 +102,7 @@ Each principle is held by a Phamtom, this one always acting in the shadows to se
 **Principles:**
 
 1. Kiwi: "we are solarpunks because optimism has been stolen from us and we seek to reclaim it."
-2. Nous sommes solarpunks parce que les seules autres options sont le déni et le désespoir.
+2. Dragonfly: "We are solarpunks because the only other options are denial and despair."
 3. L’essence du Solarpunk est une vision de l’avenir qui incarne le meilleur de ce que l’humanité peut accomplir : un monde post-pénurie, post-hiérarchie, post-capitalisme où l’humanité se considère comme une partie de la nature et où les énergies propres remplacent les combustibles fossiles.
 4. Le “punk” de Solarpunk désigne la rébellion, la contre-culture, le post-capitalisme, le décolonialisme et l’enthousiasme. Il s’agit d’aller dans une autre direction que la conventionnelle, qui est de plus en plus alarmante.
 5. Le Solarpunk est un mouvement autant qu’un genre : il s’agit non seulement des histoires, mais aussi de la manière de les rendre réelles.

@@ -7,8 +7,8 @@ import "openzeppelin-contracts/contracts/utils/Strings.sol";
 import "src/utils/HexadecimalColor.sol";
 
 /**
- * @notice Used to construct SolarPunk frame, it could evolve
- * to a more generic librairy to construct more complex SVG.
+ * @title Used to construct SolarPunk frame, it could evolve
+ * to a more generic librairy to construct SVGs.
  * */
 library SolarPunkSVGProperties {
     using Strings for uint8;
@@ -25,7 +25,7 @@ library SolarPunkSVGProperties {
         '<path d="M0 0h1000v1000H0z" style="fill:url(#b);fill-opacity:.4"/>';
 
     string internal constant CONTRACT_LOGO =
-        '<text x="251px" y="809px" style="font-family:"Poiret One";font-size:819px;">?</text>';
+        '<text x="251px" y="809px" style="font-family:&quot;Poiret One&quot;;font-size:819px;">?</text>';
 
     string internal constant LAYER_ANIMATED =
         '<path d="M0 0h1000v1000H0z" style="fill:url(#b);fill-opacity:.2"><animate attributeName="fill-opacity" values="0.2; 1; 0.2" dur="20s" repeatCount="indefinite"/></path>';

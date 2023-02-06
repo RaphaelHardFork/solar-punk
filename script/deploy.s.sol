@@ -8,6 +8,7 @@ import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import {ArtifactWriter} from "script/utils/ArtifactWriter.sol";
 import {SolarPunkDestructible} from "script/test_contracts/SolarPunkDestructible.sol";
 import {Kiwi} from "src/vectors/shapes/Kiwi.sol";
+import {Dragonfly} from "src/vectors/shapes/Dragonfly.sol";
 
 contract deploy is Script, ArtifactWriter {
     using Strings for uint256;
@@ -25,25 +26,41 @@ contract deploy is Script, ArtifactWriter {
 
         // SolarPunkDestructible solarPunk = new SolarPunkDestructible();
         // Kiwi kiwi = new Kiwi();
-        // solarPunk.addAsset(0x51Ab5BACfaBF7Df56D6E845DdF92D6e8cA4C7520);
+        // Dragonfly dragonfly = new Dragonfly();
 
         SolarPunkDestructible solarPunk = SolarPunkDestructible(
-            0x5c70a094856A64a160308526c00e529C60992469
+            0x0a1D5559310024ae182EdD87aB7d4cf6343f13b5
         );
-        for (uint256 i; i < 20; i++) {
-            solarPunk.requestMint{value: solarPunk.cost()}(block.number + 20);
-        }
+
+        // solarPunk.addAsset(0x51Ab5BACfaBF7Df56D6E845DdF92D6e8cA4C7520);
+        // solarPunk.addAsset(0x075d9c8093000bEE98E721b705B18C0BF876e8A7);
+
+        // for (uint256 i; i < 20; i++) {
+        //     solarPunk.requestMint{value: solarPunk.cost()}(block.number + 10);
+        // }
+
+        solarPunk.fulfillRequest();
 
         vm.stopBroadcast();
+        console.log("Available items", solarPunk.availableItems());
 
-        writeArtifact(
-            "SolarPunkDestructible",
-            DEPLOYER,
-            address(solarPunk),
-            abi.encode(0),
-            false,
-            address(0)
-        );
+        // writeArtifact(
+        //     "SolarPunkDestructible",
+        //     DEPLOYER,
+        //     address(solarPunk),
+        //     abi.encode(0),
+        //     false,
+        //     address(0)
+        // );
+
+        // writeArtifact(
+        //     "Dragonfly",
+        //     DEPLOYER,
+        //     address(dragonfly),
+        //     abi.encode(0),
+        //     false,
+        //     address(0)
+        // );
     }
 
     /// @notice util to log the deployment environment

@@ -54,13 +54,17 @@ library SolarPunkService {
         // render name & description
         string memory name = string.concat(
             SolarPunkProperties.NAME_PRIMER,
+            " ",
             IShape(shapeAddr).name(),
+            " ",
             rarity
         );
 
         string memory description = string.concat(
             SolarPunkProperties.DESCRIPTION_PRIMER,
-            rarityDescrition
+            rarityDescrition,
+            "  \\n",
+            IShape(shapeAddr).description()
         );
 
         return

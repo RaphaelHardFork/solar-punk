@@ -10,7 +10,7 @@ contract Kiwi is IShape {
 
     string public constant name = "Kiwi";
     string public constant description =
-        'Kiwi: "we are solarpunks because optimism has been stolen from us and we seek to reclaim it."';
+        'Kiwi: \\"we are solarpunks because optimism has been stolen from us and we seek to reclaim it.\\"';
 
     function path(string memory color)
         public

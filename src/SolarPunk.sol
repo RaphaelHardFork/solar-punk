@@ -238,6 +238,7 @@ contract SolarPunk is ERC721Enumerable, Ownable {
      */
     function _fulfillRequests(uint256 length) internal {
         uint256 lastBlockhash = block.number - 256;
+        uint256 lastRandomNumber = 1;
 
         for (uint256 i; i < length; ) {
             uint256 request = _requestList.at(i);
@@ -264,16 +265,18 @@ contract SolarPunk is ERC721Enumerable, Ownable {
                     ++i;
                 }
             } else {
+                unchecked {
+                    lastRandomNumber =
+                        lastRandomNumber +
+                        uint256(blockhash(blockNumber));
+                }
                 if (requestOwner == msg.sender) {
                     // mint directly the item
-                    _mint(
-                        msg.sender,
-                        _drawAndTransform(uint256(blockhash(blockNumber)))
-                    );
+                    _mint(msg.sender, _drawAndTransform(lastRandomNumber));
                 } else {
                     // add item to the minting list
                     _itemsToMint[requestOwner].push(
-                        _drawAndTransform(uint256(blockhash(blockNumber)))
+                        _drawAndTransform(lastRandomNumber)
                     );
                 }
                 --length;
