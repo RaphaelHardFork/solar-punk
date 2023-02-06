@@ -9,6 +9,8 @@ contract Kiwi is IShape {
     using HexadecimalColor for uint24;
 
     string public constant name = "Kiwi";
+    string public constant description =
+        'Kiwi: "we are solarpunks because optimism has been stolen from us and we seek to reclaim it."';
 
     function path(string memory color)
         public

@@ -201,6 +201,10 @@ contract SolarPunk is ERC721Enumerable, Ownable {
         return SolarPunkService.renderMetadata(tokenId, shapeAddr);
     }
 
+    function contractURI() external pure returns (string memory) {
+        return SolarPunkService.renderLogo();
+    }
+
     /*////////////////////////////
             INTERNAL FUNCTIONS
     ////////////////////////////*/

@@ -10,7 +10,7 @@ import "src/utils/HexadecimalColor.sol";
  * @notice Used to construct SolarPunk frame, it could evolve
  * to a more generic librairy to construct more complex SVG.
  * */
-library SolarPunkFrameSVG {
+library SolarPunkSVGProperties {
     using Strings for uint8;
     using HexadecimalColor for uint24;
 
@@ -23,6 +23,9 @@ library SolarPunkFrameSVG {
 
     string internal constant LAYER_STATIC =
         '<path d="M0 0h1000v1000H0z" style="fill:url(#b);fill-opacity:.4"/>';
+
+    string internal constant CONTRACT_LOGO =
+        '<text x="251px" y="809px" style="font-family:"Poiret One";font-size:819px;">?</text>';
 
     string internal constant LAYER_ANIMATED =
         '<path d="M0 0h1000v1000H0z" style="fill:url(#b);fill-opacity:.2"><animate attributeName="fill-opacity" values="0.2; 1; 0.2" dur="20s" repeatCount="indefinite"/></path>';

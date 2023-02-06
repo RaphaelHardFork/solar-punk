@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 
 import {MetadataEncoder} from "src/utils/MetadataEncoder.sol";
 import {SolarPunkProperties} from "src/metadata/SolarPunkProperties.sol";
-import {SolarPunkFrameSVG} from "src/vectors/SolarPunkSVG.sol";
+import {SolarPunkSVGProperties} from "src/vectors/SolarPunkSVG.sol";
 import {IShape} from "src/vectors/shapes/IShape.sol";
 
 /// @title SolarPunkService
@@ -29,6 +29,16 @@ library SolarPunkService {
         uint8 tokenId;
         uint8 numberOfCopies;
         Image image;
+    }
+
+    function renderLogo() internal pure returns (string memory) {
+        return
+            MetadataEncoder.encodeMetadata(
+                SolarPunkProperties.CONTRACT_NAME,
+                SolarPunkProperties.CONTRACT_DESCRIPTION,
+                createLogo(),
+                SolarPunkProperties.EXTERNAL_URL
+            );
     }
 
     function renderMetadata(uint256 tokenId, address shapeAddr)
@@ -74,20 +84,20 @@ library SolarPunkService {
         pure
         returns (string memory svgCode)
     {
-        svgCode = svgCode.append(SolarPunkFrameSVG.HEADER);
-        svgCode = svgCode.append(SolarPunkFrameSVG.BACKGROUND);
+        svgCode = svgCode.append(SolarPunkSVGProperties.HEADER);
+        svgCode = svgCode.append(SolarPunkSVGProperties.BACKGROUND);
         svgCode = svgCode.append(
             data.image.animated
-                ? SolarPunkFrameSVG.LAYER_ANIMATED
-                : SolarPunkFrameSVG.LAYER_STATIC
+                ? SolarPunkSVGProperties.LAYER_ANIMATED
+                : SolarPunkSVGProperties.LAYER_STATIC
         );
         svgCode = svgCode.append(path);
         svgCode = svgCode.append(
-            SolarPunkFrameSVG.text(data.tokenId, data.numberOfCopies)
+            SolarPunkSVGProperties.text(data.tokenId, data.numberOfCopies)
         );
-        svgCode = svgCode.append(SolarPunkFrameSVG.defs(true));
+        svgCode = svgCode.append(SolarPunkSVGProperties.defs(true));
         svgCode = svgCode.append(
-            SolarPunkFrameSVG.linearGradient(
+            SolarPunkSVGProperties.linearGradient(
                 true,
                 data.image.background.colorA,
                 data.image.background.colorB
@@ -96,15 +106,31 @@ library SolarPunkService {
 
         if (data.numberOfCopies < 51) {
             svgCode = svgCode.append(
-                SolarPunkFrameSVG.linearGradient(
+                SolarPunkSVGProperties.linearGradient(
                     false,
                     data.image.layer.colorA,
                     data.image.layer.colorB
                 )
             );
         }
-        svgCode = svgCode.append(SolarPunkFrameSVG.defs(false));
-        svgCode = svgCode.append(SolarPunkFrameSVG.FOOTER);
+        svgCode = svgCode.append(SolarPunkSVGProperties.defs(false));
+        svgCode = svgCode.append(SolarPunkSVGProperties.FOOTER);
+    }
+
+    function createLogo() internal pure returns (string memory svgCode) {
+        svgCode = svgCode.append(SolarPunkSVGProperties.HEADER);
+        svgCode = svgCode.append(SolarPunkSVGProperties.BACKGROUND);
+        svgCode = svgCode.append(SolarPunkSVGProperties.LAYER_STATIC);
+        svgCode = svgCode.append(SolarPunkSVGProperties.CONTRACT_LOGO);
+        svgCode = svgCode.append(SolarPunkSVGProperties.defs(true));
+        svgCode = svgCode.append(
+            SolarPunkSVGProperties.linearGradient(true, 0x44aa66, 0x2233aa)
+        );
+        svgCode = svgCode.append(
+            SolarPunkSVGProperties.linearGradient(false, 0xaa3377, 0x33aaee)
+        );
+        svgCode = svgCode.append(SolarPunkSVGProperties.defs(false));
+        svgCode = svgCode.append(SolarPunkSVGProperties.FOOTER);
     }
 
     function transformItemId(uint256 principe, uint256 itemId)
