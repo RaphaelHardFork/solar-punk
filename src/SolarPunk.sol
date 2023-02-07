@@ -10,25 +10,18 @@ import {Math} from "openzeppelin-contracts/contracts/utils/math/Math.sol";
 
 import {SolarPunkService} from "src/metadata/SolarPunkService.sol";
 import {SwapAndPop} from "src/structs/SwapAndPop.sol";
+import {ISolarPunk} from "src/ISolarPunk.sol";
 
 /**
  * @title ERC721 collection with on-chain metadata
  */
-contract SolarPunk is ERC721Enumerable, Ownable {
+contract SolarPunk is ERC721Enumerable, Ownable, ISolarPunk {
     using Address for address payable;
     using EnumerableSet for EnumerableSet.UintSet;
     using SwapAndPop for SwapAndPop.Reserve;
 
     /// @return cost for requesting a mint
     uint256 public immutable cost;
-
-    error OutOfBlockRange(uint256 blockNumber);
-    error ValueBelowExpected(uint256 value);
-    error NoAvailableItems();
-    error RequestListTooLong();
-    error NoRequestToFulfill();
-    error InexistantIndex(uint256 index);
-    error InexistantAsset(uint256 index);
 
     /// @dev count items committed in requests
     uint128 private _availableItems;
@@ -99,8 +92,10 @@ contract SolarPunk is ERC721Enumerable, Ownable {
             _requestList.add(request);
         }
 
+        emit RequestCreated(msg.sender, blockNumber, amount);
+
         // give change
-        payable(msg.sender).sendValue(msg.value - cost);
+        payable(msg.sender).sendValue(msg.value - cost * amount);
     }
 
     /**
@@ -112,11 +107,11 @@ contract SolarPunk is ERC721Enumerable, Ownable {
      * TODO reward fulfilling of others AND give choice to fulfill
      * only owned request
      * */
-    function fulfillRequest() external {
+    function fulfillRequest(bool onlyOwnerRequest) external {
         uint256 length = _requestList.length();
         if (length == 0) revert NoRequestToFulfill();
 
-        _fulfillRequests(length);
+        _fulfillRequests(length, onlyOwnerRequest);
     }
 
     /**
@@ -152,11 +147,12 @@ contract SolarPunk is ERC721Enumerable, Ownable {
         _shapesAddr[index] = assetAddr;
         _reserveOf[index].stock = 84;
         _availableItems += 84;
+        emit AssetAdded(index, assetAddr);
     }
 
-    /*////////////////////////////
-                GETTERS
-    ////////////////////////////*/
+    /*/////////////////////////////////////////////////////////////
+                                GETTERS
+    /////////////////////////////////////////////////////////////*/
 
     /// @return addresses list of request owner
     /// @return blocksNumber list of block number
@@ -242,9 +238,10 @@ contract SolarPunk is ERC721Enumerable, Ownable {
         return SolarPunkService.renderLogo();
     }
 
-    /*////////////////////////////
-            INTERNAL FUNCTIONS
-    ////////////////////////////*/
+    /*/////////////////////////////////////////////////////////////
+                            INTERNAL FUNCTIONS
+    /////////////////////////////////////////////////////////////*/
+
     /**
      * @dev First select a shape where to draw an item, then draw it
      * from the Reserve. And finally encode NFT informations
@@ -273,7 +270,7 @@ contract SolarPunk is ERC721Enumerable, Ownable {
      * As {EnumarableSet} use the swap and pop method the postponed request
      * replace the erroned one. Thus the loop just need to increase index
      */
-    function _fulfillRequests(uint256 length) internal {
+    function _fulfillRequests(uint256 length, bool onlyOwnerRequest) internal {
         uint256 lastBlockhash = block.number - 256;
         uint256 lastRandomNumber = 1;
 
@@ -282,41 +279,39 @@ contract SolarPunk is ERC721Enumerable, Ownable {
             uint256 blockNumber = uint64(request);
             address requestOwner = address(uint160(request >> 96));
 
-            if (blockNumber >= block.number) {
-                unchecked {
-                    ++i;
-                }
-                continue;
+            unchecked {
+                ++i;
             }
+
+            if (onlyOwnerRequest && requestOwner != msg.sender) continue;
+            if (blockNumber >= block.number) continue;
 
             if (blockNumber < lastBlockhash) {
                 // postpone the request
-                ++_lastRequestId;
                 uint256 postponedRequest = createRequest(
                     requestOwner,
-                    _lastRequestId,
+                    ++_lastRequestId,
                     block.number + 3000
                 );
                 _requestList.add(postponedRequest);
-                unchecked {
-                    ++i;
-                }
+                emit RequestPostponed(requestOwner, block.number + 3000);
             } else {
                 unchecked {
                     lastRandomNumber =
                         lastRandomNumber +
                         uint256(blockhash(blockNumber));
+                    --length;
+                    --i;
                 }
+                uint256 tokenId = _drawAndTransform(lastRandomNumber);
                 if (requestOwner == msg.sender) {
                     // mint directly the item
-                    _mint(msg.sender, _drawAndTransform(lastRandomNumber));
+                    _mint(msg.sender, tokenId);
                 } else {
                     // add item to the minting list
-                    _itemsToMint[requestOwner].push(
-                        _drawAndTransform(lastRandomNumber)
-                    );
+                    _itemsToMint[requestOwner].push(tokenId);
                 }
-                --length;
+                emit RequestFulfilled(requestOwner, tokenId);
             }
             _requestList.remove(request);
         }

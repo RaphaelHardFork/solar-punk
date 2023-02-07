@@ -3,11 +3,31 @@
 pragma solidity ^0.8.13;
 
 import "src/SolarPunk.sol";
+import "src/ISolarPunk.sol";
 import "src/vectors/shapes/IShape.sol";
 import "src/vectors/shapes/Kiwi.sol";
 import "src/vectors/shapes/Dragonfly.sol";
 
 abstract contract BaseSolarPunk {
+    /*/////////////////////////////////////////////////////////////
+                                EVENTS
+    /////////////////////////////////////////////////////////////*/
+    event RequestCreated(
+        address indexed owner,
+        uint256 blockNumber,
+        uint256 amount
+    );
+
+    event AssetAdded(uint256 index, address shapeAddr);
+
+    event RequestPostponed(address indexed owner, uint256 newBlockNumber);
+
+    event RequestFulfilled(address indexed owner, uint256 tokenId);
+
+    /*/////////////////////////////////////////////////////////////
+                                STATES
+    /////////////////////////////////////////////////////////////*/
+
     SolarPunk internal solar;
 
     address internal KIWI;

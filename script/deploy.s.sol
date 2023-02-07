@@ -39,7 +39,7 @@ contract deploy is Script, ArtifactWriter {
         //     solarPunk.requestMint{value: solarPunk.cost()}(block.number + 10);
         // }
 
-        solarPunk.fulfillRequest();
+        solarPunk.fulfillRequest(false);
 
         vm.stopBroadcast();
         console.log("Available items", solarPunk.availableItems());
