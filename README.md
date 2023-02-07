@@ -10,6 +10,7 @@ TODO:
 - [x] Deploy,test,destruct on Goerli
 - [x] Randomness on same block requested
 - [ ] ~~ForkTest with a marketplace (transfer and listing)~~
+- [ ] Events in contract
 - [ ] Explain technical choice in README
 - [ ] Explain and test how SVG lib can be re used
 - [ ] Verify contract on IPFS
@@ -17,9 +18,13 @@ TODO:
 
 IMPROVMENT:
 
-- [ ] Next blocks request released (instead of request list or +)
+- [x] Request several mint
+- [x] Next blocks request released (instead of request list or +)
+- [ ] Request list length???
+- [ ] Fill request at request mint
 - [ ] Allow to fill only sender requests
 - [ ] Refund gas for filling request of others
+- [ ] Alone test for gas snapshot??
 
 ## Unit
 

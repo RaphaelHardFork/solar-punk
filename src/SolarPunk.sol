@@ -12,14 +12,16 @@ import {SolarPunkService} from "src/metadata/SolarPunkService.sol";
 import {SwapAndPop} from "src/structs/SwapAndPop.sol";
 
 /**
- * @notice Error are declared outside the contract
+ * @title ERC721 collection with on-chain metadata
  */
-
 contract SolarPunk is ERC721Enumerable, Ownable {
     using Address for address payable;
     using EnumerableSet for EnumerableSet.UintSet;
     using SwapAndPop for SwapAndPop.Reserve;
+
+    /// @return cost for requesting a mint
     uint256 public immutable cost;
+
     error OutOfBlockRange(uint256 blockNumber);
     error ValueBelowExpected(uint256 value);
     error NoAvailableItems();
@@ -28,55 +30,74 @@ contract SolarPunk is ERC721Enumerable, Ownable {
     error InexistantIndex(uint256 index);
     error InexistantAsset(uint256 index);
 
-    /// @dev count item committed in requests
+    /// @dev count items committed in requests
     uint128 private _availableItems;
 
-    /// @dev used to create unique request for same blockNumber and owner
+    /// @dev counter for creating unique request for the same block number and owner
     uint128 private _lastRequestId;
 
-    /// @dev index to retrieve shape contract address, not relevant to pack it
-    uint256 _lastShapeId;
+    /// @dev counter for indexing shape contracts addresses
+    uint256 private _lastShapeId;
 
+    /// @dev track shape contracts addresses
     mapping(uint256 => address) private _shapesAddr;
+
+    /// @dev track remainning itemID for a specific shape
     mapping(uint256 => SwapAndPop.Reserve) private _reserveOf;
+
+    /// @dev track tokenID to mint for users
     mapping(address => uint256[]) private _itemsToMint;
 
+    /// @dev list of mint request
     EnumerableSet.UintSet private _requestList;
+
+    /// @dev list of shape contracts addresses index with remainning item inside
     EnumerableSet.UintSet private _activeShapeList;
 
-    constructor(address owner) ERC721("SolarPunk v0.4", "SPKv0.4") {
+    /// @param owner address of owner of the contract
+    constructor(address owner) ERC721("SolarPunk v0.5", "SPKv0.5") {
         if (msg.sender != owner) transferOwnership(owner);
         cost = 0.000003 ether;
     }
 
-    /*////////////////////////////
-            PUBLIC FUNCTIONS
-    ////////////////////////////*/
+    /*/////////////////////////////////////////////////////////////
+                            PUBLIC FUNCTIONS
+    /////////////////////////////////////////////////////////////*/
+
     /**
-     * @notice Allow users to buy an item, a commit to a future
-     * block number hash is used to determine a random value to
-     * ensure a fair distribution of items.
+     * @notice Allow users to request one or several assets, users
+     * must determine a block number in the future in which the
+     * blockchash will be used to randomly choose assets to mint.
      *
-     * @param blockNumber future block number committed
+     * @param blockNumber future block number committed (RANGE=[block.number+1:block.number + 72000))
+     * @param amount number of asset to request
      * */
-    function requestMint(uint256 blockNumber) external payable {
-        // check request meet requirements
+    function requestMint(uint256 blockNumber, uint256 amount) external payable {
+        // check inputs
         if (blockNumber <= block.number || blockNumber > block.number + 72000)
             revert OutOfBlockRange(blockNumber);
-        if (msg.value < cost) revert ValueBelowExpected(msg.value);
+        if (msg.value < cost * amount) revert ValueBelowExpected(msg.value);
         if (_requestList.length() > 100) revert RequestListTooLong();
-        if (_availableItems == 0) revert NoAvailableItems();
+        if (_availableItems < amount) revert NoAvailableItems();
 
-        --_availableItems;
-        ++_lastRequestId;
+        // decrement available items
+        unchecked {
+            _availableItems -= uint128(amount);
+        }
 
-        // commit to a future block
-        uint256 request = createRequest(
-            msg.sender,
-            _lastRequestId,
-            blockNumber
-        );
-        _requestList.add(request);
+        // store requests
+        for (uint256 i; i < amount; ) {
+            unchecked {
+                ++_lastRequestId;
+                ++i;
+            }
+            uint256 request = createRequest(
+                msg.sender,
+                _lastRequestId,
+                blockNumber
+            );
+            _requestList.add(request);
+        }
 
         // give change
         payable(msg.sender).sendValue(msg.value - cost);
@@ -137,9 +158,25 @@ contract SolarPunk is ERC721Enumerable, Ownable {
                 GETTERS
     ////////////////////////////*/
 
-    /// @return requests list (`uint256[] memory`)
-    function requestList() external view returns (uint256[] memory) {
-        return _requestList.values();
+    /// @return addresses list of request owner
+    /// @return blocksNumber list of block number
+    function requestList()
+        external
+        view
+        returns (address[] memory addresses, uint256[] memory blocksNumber)
+    {
+        uint256 length = _requestList.length();
+        addresses = new address[](length);
+        blocksNumber = new uint256[](length);
+
+        for (uint256 i; i < length; ) {
+            uint256 request = _requestList.at(i);
+            addresses[i] = address(uint160(request >> 96));
+            blocksNumber[i] = uint64(request);
+            unchecked {
+                ++i;
+            }
+        }
     }
 
     /// @return list of pending mints of an user (`uint256[] memory`)
