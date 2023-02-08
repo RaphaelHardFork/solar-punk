@@ -7,3 +7,6 @@ broadcast/
 
 # Dotenv file
 .env
+
+# Utils dpendencies
+node_modules/

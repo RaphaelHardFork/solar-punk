@@ -1,138 +1,104 @@
-# Solar Punk
+# Solar Punk Collection
+
+_Solar Punk is a collection on ERC721 deployed on Optimism with on-chain metadata and a partial randomness generation. Solar Punk is a small project training for using a free source of randomness and fully decentralized metadata._
+
+---
 
 TODO:
 
-- [x] Document code, explain function and library
-- [x] Review naming for `assets` and add index for it
-- [x] Review SwapAndPop test suite
-- [x] Write scripts for deployment on testnet
-- [x] Contract URI + image (design it)
-- [x] Deploy,test,destruct on Goerli
-- [x] Randomness on same block requested
-- [ ] ~~ForkTest with a marketplace (transfer and listing)~~
-- [x] Events in contract
-- [ ] Explain technical choice in README
-- [ ] Explain and test how SVG lib can be re used
 - [ ] Verify contract on IPFS
 - [ ] Change design and deploy on mainnet
 
-IMPROVMENT:
+---
 
-- [x] Request several mint
-- [x] Next blocks request released (instead of request list or +)
-- [x] Allow to fill only sender requests
-- [ ] ~~Refund gas for filling request of others~~
+## Mint a Solar Punk
 
-## Unit
+Here the steps to mint a Solar Punk:
 
-- 22 Figures:
-  - 5 raretés:
-    - Phantom (x1)
-    - Gradient animated (x1)
-    - Dark (x5)
-    - Gradient (x20)
-    - Uni (x50)
+1. Go to any explorer or the dApp
+2. Send value and commit to a future block with `requestMint(uint256,uint256)`:
+   - **value:** 0.005 ether by requested asset to mint
+   - **blockNumber:** choose a block in the range `[block.number + 1 : block.number + 72000)`
+   - **amount:** number of requested asset to mint
+3. Wait until the committed block is reached and call `fulfillRequest(bool)`:
+   - **onlyOwnerRequest:** true if you want to fulfill only your request (token of others are not minted)
 
-| Rarété   | Nombre | Background         | Layer              | Animated | Figure |
-| -------- | ------ | ------------------ | ------------------ | -------- | ------ |
-| Phantom  | 1      | #000000 -> #aaaaaa | #000000 -> #aaaaaa | yes      | white  |
-| Elevated | 2      | #000000 -> #aaaaaa | #000000 -> #aaaaaa | yes      | black  |
-| Dark     | 4      | #000000 -> #aaaaaa | #000000 -> #aaaaaa | No       | white  |
-| Gradient | 26     | #000000 -> #aaaaaa | #000000 -> #aaaaaa | No       | black  |
-| Uni      | 51     | #aaaaaa            | None               | No       | black  |
+If your request is expired, the request is postponed to `block.number + 3000` when calling `fulfillRequest`. Once a request is done number of available assets decrement so you can request an asset and take the risk to not mint a token then.
 
-**Encode metadata:**
+## Deployments
 
-Adapted for dynamics metadata: create a struct like this
+| Contracts            | Optimism mainnet | Optimism goerli | Contracts size | Metadata hash |
+| -------------------- | ---------------- | --------------- | -------------- | ------------- |
+| `SolarPunk` (ERC721) | 0xaaa            | 0xbbb           | 0              |               |
+| `Kiwi`               | 0xaaa            | 0xbbb           | 0              |               |
+| `Dragonfly`          | 0xaaa            | 0xbbb           | 0              |               |
 
-| Bytes32 | Data                |
-| ------- | ------------------- |
-| 0x      |                     |
-| 00      | TokenId             |
-| 01      | Number of copies    |
-| 02      | Background color1:R |
-| 03      | G                   |
-| 04      | B                   |
-| 05      | Background color2:R |
-| 06      | G                   |
-| 07      | B                   |
-| 08      | Layer color1:R      |
-| 09      | G                   |
-| 10      | B                   |
-| 11      | Layer color2:R      |
-| 12      | G                   |
-| 13      | B                   |
-| 14      | Animated            |
-| 15      | Figure color(B/W)   |
-| 16      | Solar Punk Principe |
-| 17      | B                   |
-| 18      | B                   |
-| 19      | B                   |
+## Technical choices
 
-Adopted structure: run 0->1848 encode above informations in struct, compare encoding gas, tokenId & decoding gas
+### Source of randomness
 
-| Bytes32 | Data                | Execute                   |
-| ------- | ------------------- | ------------------------- |
-| 0x      |                     |
-| 01      | TokenId             |
-| 02      | Rarity              | Frames & number of copies |
-| 03      | Solar Punk Principe | Name & Path               |
+To generate a random number before minting a token the blockhash of a future block is used. The smart contract asks the user to commit a block in the future (`[block.number + 1 : block.number + 72000)`), 72000 blocks correspond to approximatively 10 days on Optimism network. Once the targeted block is reached, the user can mint the token using the blockhash to draw among available assets.
 
-## Descriptions
+**Advantage of commiting to a future blockhash:**
 
-**Contract description:**
-Discover the Solar Punk collection!
+1. This randomness allows an unpredictability of the blockhash, as this latter is not stated at the commitment.
+2. This process leverages on-chain data, which is totally free.
+3. Moreover the randomness generation is transparent, meaning that any actor can verify the random generation process.
 
-A collection of 1848 unique asset living on Optimism ethereum layer 2, this collection promotes an optimist vision as Solar Punks do.
+**Weakness of this randomness:**
 
-The collection consists of 22 shapes x 84 assets including 5 different rarities, each assets are distributed randomly. NFTs metadata consist of SVG on-chain, encoded into the `tokenID` and rendered with the `tokenURI` function. The contract is verified on explorers and IPFS, so you can mint your asset wherever you want.
+1. The block proposer can manipulate the block body (order of transaction for example) to manipulate the blockhash and thus try to get the rarest asset.
+2. Using the `blockhash` OPCODE is also problematic because we can't access blockhash older than 256 blocks, so the commitment can expire. Once the target block reached users have a window of 256 blocks to call the reveal function otherwise the commitment is expired and, in `SolarPunk` contract postponed to 3000 blocks in the future. Optimism network was chosen to expand this window as block a produced in average each 12s (like Ethereum), which give a window of time of approximatively 50 min.
 
-**General assets description:**
-This NFT belongs to the Solar Punk collection. Solar Punks promotes an optimist vision of the future, they don't warn of futures dangers but propose solutions to avoid that the dystopias come true. Solar Punks holds 22 principles that defines they're vision and mission.
+### On-chain metadata
 
-**Description Uni:**
-Unis are the most common edition this collection, but this not mean they are worthless.
-**Description Gradient**:
-Gradients are less common in this collection. They shine as the mission of SolarPunks.
-**Description Dark**:
-Darks are rare in this collection, the living proofs of existence of Lunar Punks, even if missions of Solar Punks are obstructed, they continue to act discretely.
-**Description Elevated**:
-This is one of the two Elevated Solar Punks holding this principle, their charisma radiates everywhere and inspires people by their actions.
-**Description Phantom**:
-Each principle is held by a Phamtom, this one always acting in the shadows to serve the light.
+Using on-chain metadata is not recommended as it increase considerably the size of stored data in the blockchain. It's preferable to use decentralized and immutable storage like IPFS.
 
-**Principles:**
+Here light svg asset were chosen to minimize the size storage on the blockchain. To optimize the size of SVG asset code the awesome [SVGOMG](https://jakearchibald.github.io/svgomg/) tool was used.
 
-1. Kiwi: "we are solarpunks because optimism has been stolen from us and we seek to reclaim it."
-2. Dragonfly: "We are solarpunks because the only other options are denial and despair."
-3. L’essence du Solarpunk est une vision de l’avenir qui incarne le meilleur de ce que l’humanité peut accomplir : un monde post-pénurie, post-hiérarchie, post-capitalisme où l’humanité se considère comme une partie de la nature et où les énergies propres remplacent les combustibles fossiles.
-4. Le “punk” de Solarpunk désigne la rébellion, la contre-culture, le post-capitalisme, le décolonialisme et l’enthousiasme. Il s’agit d’aller dans une autre direction que la conventionnelle, qui est de plus en plus alarmante.
-5. Le Solarpunk est un mouvement autant qu’un genre : il s’agit non seulement des histoires, mais aussi de la manière de les rendre réelles.
-6. Le Solarpunk embrasse diverses tactiques : il n’y a pas une manière unique d’être solarpunk. À la place, diverses communautés de par le monde en ont adopté le nom et les idées et ont bâti des petites niches de révolutions autonomes.
-7. Le Solarpunk fournit une nouvelle perspective précieuse, un paradigme et un vocabulaire avec lesquels nous pouvons décrire un futur possible. Au lieu d’embrasser le rétrofuturisme, le Solarpunk se tourne entièrement vers l’avenir. Pas un futur alternatif, mais un futur possible.
-8. Notre futurisme n’est pas nihiliste comme le Cyberpunk et évite les tendances potentiellement quasi-réactionnaires du Steampunk : il traite d’ingéniosité, de générativité, d’indépendance et de communauté.
-9. Le Solarpunk met l’accent sur la durabilité environnementale et la justice sociale.
-10. Le Solarpunk cherche à trouver des façons de rendre la vie plus belle pour nous maintenant, mais aussi pour les générations qui vont nous succéder.
-11. Notre avenir suppose la réutilisation de ce que nous possédons déjà et, si nécessaire, sa transformation pour lui donner une autre utilisation. Imaginez les “villes intelligentes” être abandonnées à la faveur d’une citoyenneté intelligente.
-12. Le Solarpunk reconnait l’influence historique que la politique et la science-fiction ont eu l’une sur l’autre.
-13. Le Solarpunk reconnait la science-fiction non seulement comme un divertissement mais aussi comme une forme d’activisme.
-14. Le Solarpunk veut contrer les scénarios d’une terre mourante, d’un insurmontable fossé entre riches et pauvres, et d’une société contrôlée par les corporations. Pas dans des centaines d’années, mais maintenant.
-15. Le Solarpunk c’est la culture maker de la jeunesse, c’est des réseaux et solutions énergétiques locaux, c’est des façons de créer des systèmes autonomes qui fonctionnent. C’est un amour du monde.
-16. La culture Solarpunk inclut toutes les cultures, religions, aptitudes, sexes, genres et identités sexuelles.
-17. Le Solarpunk est l’idée d’une humanité qui atteindrait une évolution sociale qui n’embrasserait pas seulement une simple tolérance, mais également une compassion et une acceptation plus complètes.
-18. Les esthétiques visuelles du Solarpunk sont ouvertes et évolutives. En l’état, c’est un mashup de :
-    - L’âge de la voile et le mythe de la Frontière des années 1800 (mais avec plus de bicyclettes)
-    - La réutilisation créative d’infrastructures existantes (parfois post-apocalyptiques, parfois contemporaines-étranges)
-    - Une technologie appropriée
-    - L’Art Nouveau
-    - Hayao Miyazaki
-    - Des innovations dans le style Jugaad provenant du monde - non-Occidental
-    - Des back-ends des techniques de pointe avec des résultats simples et élégants
-19. Le Solarpunk se passe dans un futur bâti en suivant les principes du nouvel urbanisme ou du nouveau piétonnisme ainsi que de la durabilité environnementale.
-20. Le Solarpunk conçoit un environnement construit adapté de manière créative pour tirer parti de l’énergie solaire en utilisant, entre autres, différentes technologies. L’objectif est de promouvoir l’autosuffisance et la vie dans les limites naturelles.
-21. Dans le Solarpunk, nous avons réussi à faire machine arrière juste à temps pour arrêter la lente destruction de notre planète. Nous avons appris à utiliser la science avec sagesse, pour l’amélioration de notre condition de vie en tant que partie de notre planète. Nous ne sommes plus des chef•fe•s suprêmes. Nous sommes des soigneur•se•s. Nous sommes des jardinier•ère•s.
-22. Le Solarpunk :
-    - est diversifié
-    - a de la place pour que spiritualité et science puissent coexister
-    - est beau
-    - peut arriver. Maintenant.
+All SVG and metadata properties are stored in the blockchain into the `SolarPunk` contract and SVG path of assets with their description and name are stored on separate contracts which share the `IShape` interface. This allows to add new shape even after the contract deployment.
+
+Then SVG asset are rendered when the `tokenURI` function is called. Information to render SVGs are encoded into the token ID, which is a `uint256` (see [ERC721](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC721/ERC721.sol#L30)). As it's an `uint256` (32 x `uint8`) the token ID can hold a certain amount of data, data are encoded following the struct `TokenID` in `SolarPunkService`, here the encoding format of a token ID:
+
+| bytes32(tokenID) | Data name and type         | Description                               |
+| ---------------- | -------------------------- | ----------------------------------------- |
+| 0x               | /                          | /                                         |
+| 00               | Shape index `uint8`        | Shape contract address index              |
+| 01               | Token id `uint8`           | ID of the token among number of copies    |
+| 02               | Number of copies `uint8`   | Number of copies for one rarity           |
+| 03               | Animated `bool`            | Flag for svg animation                    |
+| 04               | Shape color `uint24`       | Color of the shape                        |
+| 07               | Background colorA `uint24` | Starting color of the background gradient |
+| 10               | Background colorB `uint24` | End color of the background gradient      |
+| 13               | Layer colorA `uint24`      | Starting color of the layer gradient      |
+| 16               | Layer colorB `uint24`      | End color of the layer gradient           |
+
+**Encoding colors:**
+Colors are encoded in `uint24` (3 x `uint8`) to represent an hexadecimal color (`0xaaeebb` => ![](https://img.shields.io/badge/%23AAEEBB-AAEEBB)). The convertion to the string representation with `#` is done with `HexadecimalColor.sol` which is an adaptation of the `Strings.sol` library from OZ.
+
+With these data, the `tokenURI` function will fetch data to create the svg code and asset metadata:
+
+1. Shape index is used to get the contract address `IShape(shapeAddr)`
+2. `IShape(shapeAddr).path(uint24)` and `SolarPunkSVGProperties` are used to create the SVG code of the image
+3. SVG code is encoded with the OZ library `Base64`
+4. `IShape(shapeAddr).name()`, `IShape(shapeAddr).description()` and `SolarPunkProperties` are used to create the asset metadata
+5. As well as the image, metadata are also Base64 encoded and returned to the `tokenURI` function.
+
+**Advantage and potential:**
+With this method, no third parties storage system is required to associate image with an NFT. Moreover data for rendering the image can be modified to make a dynamical NFT which can evolve with a DAO, a reputation system and so on. If we want to leverage this feature in this contract, we must store data for the rendering elsewhere than the token ID.
+
+**Drawbacks:**
+The main drawback is the size of the contract we deploy to create dynamically on-chain svg asset, thus we use a lot of gas at deployment and clutter up the blockchain which is not designed for that.
+Also the code to render the svg asset is complex because Solidity and the EVM are not designed to manage `string` (long `string` in case of SVG), especially to concatenate many elements, the `stack too deep error` can be very limiting (here the workaround for this error is to `append` the svg code string, see [`MetadataEncoder::append`]())
+
+## Improvements
+
+---
+
+# Using
+
+```
+forge
+```
+
+asset checker
