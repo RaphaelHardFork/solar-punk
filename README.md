@@ -1,12 +1,16 @@
 # Solar Punk Collection
 
+![](https://img.shields.io/badge/Tests%20coverage-~97%-green)
+
 _Solar Punk is a collection on ERC721 deployed on Optimism with on-chain metadata and a partial randomness generation. Solar Punk is a small project training for using a free source of randomness and fully decentralized metadata._
 
 ---
 
 TODO:
 
-- [ ] Verify contract on IPFS
+- [x] Check IPFS hash
+- [x] Add licence and badge
+- [ ] Add repo build deploy verify
 - [ ] Change design and deploy on mainnet
 
 ---
@@ -97,8 +101,59 @@ Also the code to render the svg asset is complex because Solidity and the EVM ar
 
 # Using
 
+Make sure you have installed [Rust](https://www.rust-lang.org/fr/learn/get-started) & [Foundry](https://book.getfoundry.sh/getting-started/installation)
+
 ```
-forge
+forge install
+yarn
 ```
 
-asset checker
+## Build contracts
+
+```
+forge build
+```
+
+## Extract IPFS hash appended to the bytecode
+
+```
+forge build
+node utils/ipfsAppended.js <name_of_contract>
+```
+
+## Testing contracts
+
+```
+forge test
+```
+
+## Check assets rendering and distribution
+
+```
+node utils/render.js
+forge script assets
+node utils/render.js
+```
+
+You can view SVG in `cache/assets/svg`, sample size is set in `assets.s.sol` with `NUMBER_OF_TOKEN`
+
+## Deploy contracts
+
+Make sure the `.env` file is set following the `.env.example`
+
+### On local blockchain
+
+```
+anvil (in another terminal)
+forge script deploy --rpc-url anvil --broadcast
+```
+
+### On mainnet/testnet
+
+Always dry-run without `--broadcast` to test your script
+
+```
+forge script deploy --rpc-url <network_alias>
+```
+
+Then execute with `--broadcast`

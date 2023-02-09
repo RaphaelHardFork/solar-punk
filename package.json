@@ -1,9 +1,12 @@
 {
-  "name": "solarPunk",
+  "name": "SolarPunk",
   "type": "module",
   "version": "1.0.0",
   "main": "index.js",
   "repository": "git@github.com:RaphaelHardFork/solarPunk.git",
   "author": "raphael <raphael.pellet@protonmail.com>",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "@ethereum-sourcify/bytecode-utils": "^1.0.4"
+  }
 }
