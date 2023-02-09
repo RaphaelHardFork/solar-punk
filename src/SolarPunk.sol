@@ -150,6 +150,13 @@ contract SolarPunk is ERC721Enumerable, Ownable, ISolarPunk {
         emit AssetAdded(index, assetAddr);
     }
 
+    /**
+     * @notice Allow only-owner to with the contract balance.
+     */
+    function withdraw() external onlyOwner {
+        payable(msg.sender).sendValue(address(this).balance);
+    }
+
     /*/////////////////////////////////////////////////////////////
                                 GETTERS
     /////////////////////////////////////////////////////////////*/
