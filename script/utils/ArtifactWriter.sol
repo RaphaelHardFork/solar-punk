@@ -15,6 +15,10 @@ import "forge-std/Vm.sol";
 //      - isProxy
 //      - implAddress
 
+/// @notice Utils contract still in development
+/// Reading broadcated call could be way more useful
+/// GOAL keep simple JSON file to track deployments
+
 abstract contract ArtifactWriter {
     using Strings for uint256;
     using stdJson for string;
