@@ -7,6 +7,7 @@ import "src/ISolarPunk.sol";
 import "src/vectors/shapes/IShape.sol";
 import "src/vectors/shapes/Kiwi.sol";
 import "src/vectors/shapes/Dragonfly.sol";
+import "src/vectors/shapes/Onion.sol";
 
 abstract contract BaseSolarPunk {
     /*/////////////////////////////////////////////////////////////
@@ -32,6 +33,7 @@ abstract contract BaseSolarPunk {
 
     address internal KIWI;
     address internal DRAGONFLY;
+    address internal ONION;
     address internal SOLAR;
 
     uint256 internal GAS_PRICE;
@@ -50,5 +52,9 @@ abstract contract BaseSolarPunk {
 
     function _deploy_dragonfly() internal {
         DRAGONFLY = address(new Dragonfly());
+    }
+
+    function _deploy_onion() internal {
+        ONION = address(new Onion());
     }
 }

@@ -8,13 +8,14 @@ import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import {SolarPunk} from "src/SolarPunk.sol";
 import {Kiwi} from "src/vectors/shapes/Kiwi.sol";
 import {Dragonfly} from "src/vectors/shapes/Dragonfly.sol";
+import {Onion} from "src/vectors/shapes/Onion.sol";
 
 contract assets is Script {
     using Strings for uint256;
 
     address internal constant OWNER = address(501);
     uint256 internal constant NUMBER_OF_TOKEN = 100;
-    uint256 internal constant TARGET_BLOCK = 2000;
+    uint256 internal constant TARGET_BLOCK = 500;
 
     function run() public {
         require(block.chainid == 31337, "Only on test blockchain");
@@ -33,6 +34,7 @@ contract assets is Script {
         // add shapes
         solar.addAsset(address(new Kiwi()));
         solar.addAsset(address(new Dragonfly()));
+        solar.addAsset(address(new Onion()));
 
         // mint X number of token
         solar.requestMint{value: 10 ether}(

@@ -14,6 +14,7 @@ contract SolarPunk_test is BaseSolarPunk, Roles {
         _deploy_solarPunk(OWNER);
         _deploy_kiwi();
         _deploy_dragonfly();
+        _deploy_onion();
         _newUsersSet(50, 5);
 
         vm.roll(100000);
@@ -580,5 +581,50 @@ contract SolarPunk_test is BaseSolarPunk, Roles {
         uint256 tokenId = solar.tokenOfOwnerByIndex(USERS[0], 0);
         vm.expectCall(KIWI, abi.encodeWithSignature("name()"));
         solar.tokenURI(tokenId);
+    }
+
+    function test_tokenURI_RenderKiwi() public {
+        vm.prank(OWNER);
+        solar.addAsset(KIWI);
+        vm.startPrank(USERS[0]);
+        solar.requestMint{value: 0.03 ether}(block.number + 5, 1);
+        vm.roll(block.number + 10);
+        solar.fulfillRequest(false);
+
+        uint256 tokenId = solar.tokenOfOwnerByIndex(USERS[0], 0);
+        (bool success, ) = SOLAR.staticcall(
+            abi.encodeWithSignature("tokenURI(uint256)", tokenId)
+        );
+        assertTrue(success);
+    }
+
+    function test_tokenURI_RenderDragonfly() public {
+        vm.prank(OWNER);
+        solar.addAsset(DRAGONFLY);
+        vm.startPrank(USERS[0]);
+        solar.requestMint{value: 0.03 ether}(block.number + 5, 1);
+        vm.roll(block.number + 10);
+        solar.fulfillRequest(false);
+
+        uint256 tokenId = solar.tokenOfOwnerByIndex(USERS[0], 0);
+        (bool success, ) = SOLAR.staticcall(
+            abi.encodeWithSignature("tokenURI(uint256)", tokenId)
+        );
+        assertTrue(success);
+    }
+
+    function test_tokenURI_RenderOnion() public {
+        vm.prank(OWNER);
+        solar.addAsset(ONION);
+        vm.startPrank(USERS[0]);
+        solar.requestMint{value: 0.03 ether}(block.number + 5, 1);
+        vm.roll(block.number + 10);
+        solar.fulfillRequest(false);
+
+        uint256 tokenId = solar.tokenOfOwnerByIndex(USERS[0], 0);
+        (bool success, ) = SOLAR.staticcall(
+            abi.encodeWithSignature("tokenURI(uint256)", tokenId)
+        );
+        assertTrue(success);
     }
 }

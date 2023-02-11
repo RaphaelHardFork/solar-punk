@@ -5,8 +5,10 @@ import { readFileSync, writeFileSync, readdirSync, mkdirSync } from "fs"
 // assets/json
 // assets/svg
 
+let total = 0
 const kiwi = [0, 0, 0, 0, 0]
 const dragonfly = [0, 0, 0, 0, 0]
+const onion = [0, 0, 0, 0, 0]
 const phantom = []
 const elevated = []
 const dark = []
@@ -43,6 +45,9 @@ const main = () => {
       case "Dragonfly":
         rarityArray = dragonfly
         break
+      case "Onion":
+        rarityArray = onion
+        break
       default:
         console.log("Exit because name is not find", json.name)
         process.exit(1)
@@ -51,10 +56,15 @@ const main = () => {
     // all assets details
     addAssetInRarity(svg, rarityArray, i)
   }
+
+  // log shapes
   console.log("\nAssets distribution:")
   console.log("Shape [Uni, Gradient, Dark, Elevated, Phantom]")
   console.log("Kiwi", kiwi)
   console.log("Dragonfly", dragonfly)
+  console.log("Onion", onion)
+
+  // log rarity
   console.log("\nID by rarity:")
   console.log("Phantom", phantom)
   console.log("Elevated", elevated)

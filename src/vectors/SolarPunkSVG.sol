@@ -22,13 +22,13 @@ library SolarPunkSVGProperties {
         '<path d="M0 0h1000v1000H0z" style="fill:url(#a)"/>';
 
     string internal constant LAYER_STATIC =
-        '<path d="M0 0h1000v1000H0z" style="fill:url(#b);fill-opacity:.4"/>';
+        '<path d="M0 0h1000v1000H0z" style="fill:url(#b);fill-opacity:.75"/>';
 
     string internal constant CONTRACT_LOGO =
         '<text x="251px" y="809px" style="font-family:&quot;Poiret One&quot;;font-size:819px;">?</text>';
 
     string internal constant LAYER_ANIMATED =
-        '<path d="M0 0h1000v1000H0z" style="fill:url(#b);fill-opacity:.2"><animate attributeName="fill-opacity" values="0.2; 1; 0.2" dur="20s" repeatCount="indefinite"/></path>';
+        '<path d="M0 0h1000v1000H0z" style="fill:url(#b);fill-opacity:0"><animate attributeName="fill-opacity" values="0; 1; 0" dur="20s" repeatCount="indefinite"/></path>';
 
     string internal constant FOOTER = "</svg>";
 
@@ -42,9 +42,14 @@ library SolarPunkSVGProperties {
         pure
         returns (string memory)
     {
+        string memory color = rarityAmount == 4 || rarityAmount == 1
+            ? ";fill:#FFF"
+            : "";
         return
             string.concat(
-                '<text text-anchor="middle" x="50%" y="946" style="font-family:&quot;Poiret One&quot;;font-size:34px">',
+                '<text text-anchor="middle" x="50%" y="946" style="font-family:&quot;Poiret One&quot;',
+                color,
+                ';font-size:34px">',
                 tokenId.toString(),
                 "/",
                 rarityAmount.toString(),
@@ -62,9 +67,11 @@ library SolarPunkSVGProperties {
                 // first part
                 "<linearGradient id=",
                 isBackground ? '"a"' : '"b"',
-                ' x1="0" x2="1" y1="0" y2="0" gradientUnits="userSpaceOnUse" gradientTransform="rotate(',
-                isBackground ? "45" : "135",
-                ') scale(1414)">',
+                ' x1="0" x2="1" y1="0" y2="0" gradientUnits="userSpaceOnUse" gradientTransform="matrix',
+                isBackground
+                    ? "(-1000,-1000,1000,-1000,1000,1000)"
+                    : "(-1000,1000,-1000,-1000,1000,0)",
+                '">',
                 // second part
                 '<stop offset="0" style="stop-color:',
                 color1.toColor(),

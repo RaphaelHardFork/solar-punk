@@ -150,45 +150,45 @@ library SolarPunkService {
             // uni
             data.tokenId = uint8(itemId + 1);
             data.numberOfCopies = 51;
-            data.image.background.colorA = 0x223344;
-            data.image.background.colorB = 0x223344;
+            data.image.background.colorA = 0xB1D39C;
+            data.image.background.colorB = 0xB1D39C;
         } else if (itemId >= 51 && itemId < 77) {
             // gradient
             itemId = itemId % 51;
             data.tokenId = uint8(itemId + 1);
             data.numberOfCopies = 26;
-            data.image.background.colorA = 0xaabb44;
-            data.image.background.colorB = 0x22ccdd;
-            data.image.layer.colorA = 0xee55aa;
-            data.image.layer.colorB = 0xaa0000;
+            data.image.background.colorA = 0xffffff;
+            data.image.background.colorB = 0xC85426;
+            data.image.layer.colorA = 0x87E990;
+            data.image.layer.colorB = 0x63B3E9;
         } else if (itemId >= 77 && itemId < 81) {
             // dark
             itemId = (itemId % 51) % 26;
             data.tokenId = uint8(itemId + 1);
             data.numberOfCopies = 4;
-            data.image.background.colorA = 0x114444;
-            data.image.background.colorB = 0x226633;
-            data.image.layer.colorA = 0x224477;
-            data.image.layer.colorB = 0xaa22aa;
+            data.image.background.colorA = 0x108EA6;
+            data.image.background.colorB = 0x000000;
+            data.image.layer.colorA = 0x612463;
+            data.image.layer.colorB = 0x202283;
             data.image.shapeColor = 0xffffff;
         } else if (itemId == 81 || itemId == 82) {
             // elevated
             data.tokenId = itemId == 81 ? 1 : 2;
             data.numberOfCopies = 2;
             data.image.animated = true;
-            data.image.background.colorA = 0xaabb44;
-            data.image.background.colorB = 0x22ccdd;
-            data.image.layer.colorA = 0xee55aa;
-            data.image.layer.colorB = 0xaa0000;
+            data.image.background.colorA = 0xDBA533;
+            data.image.background.colorB = 0xBB2730;
+            data.image.layer.colorA = 0x33CEDB;
+            data.image.layer.colorB = 0x5BB252;
         } else {
             // phantom
             data.tokenId = 1;
             data.numberOfCopies = 1;
             data.image.animated = true;
-            data.image.background.colorA = 0x114444;
-            data.image.background.colorB = 0x226633;
-            data.image.layer.colorA = 0x224477;
-            data.image.layer.colorB = 0xaa22aa;
+            data.image.background.colorA = 0x5E2463;
+            data.image.background.colorB = 0x000000;
+            data.image.layer.colorA = 0xFFF4CC;
+            data.image.layer.colorB = 0xffffff;
             data.image.shapeColor = 0xffffff;
         }
 
