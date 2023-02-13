@@ -124,14 +124,14 @@ library SolarPunkService {
     function createLogo() internal pure returns (string memory svgCode) {
         svgCode = svgCode.append(SolarPunkSVGProperties.HEADER);
         svgCode = svgCode.append(SolarPunkSVGProperties.BACKGROUND);
-        svgCode = svgCode.append(SolarPunkSVGProperties.LAYER_STATIC);
+        svgCode = svgCode.append(SolarPunkSVGProperties.LAYER_ANIMATED);
         svgCode = svgCode.append(SolarPunkSVGProperties.CONTRACT_LOGO);
         svgCode = svgCode.append(SolarPunkSVGProperties.defs(true));
         svgCode = svgCode.append(
-            SolarPunkSVGProperties.linearGradient(true, 0x44aa66, 0x2233aa)
+            SolarPunkSVGProperties.linearGradient(true, 0x12ae56, 0xee9944)
         );
         svgCode = svgCode.append(
-            SolarPunkSVGProperties.linearGradient(false, 0xaa3377, 0x33aaee)
+            SolarPunkSVGProperties.linearGradient(false, 0xaa3377, 0x2244cc)
         );
         svgCode = svgCode.append(SolarPunkSVGProperties.defs(false));
         svgCode = svgCode.append(SolarPunkSVGProperties.FOOTER);

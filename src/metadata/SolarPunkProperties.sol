@@ -22,9 +22,10 @@ library SolarPunkProperties {
         "Each principle is held by a Phamtom, this one always acting in the shadows to serve the light.";
 
     // COLLECTIONS PROPERTIES
-    string internal constant CONTRACT_NAME = "Solar Punk Collection v0.4";
+    string internal constant CONTRACT_NAME = "Solar Punk Collection";
     string internal constant CONTRACT_DESCRIPTION =
         "Discover the Solar Punk collection!  \\nA collection of 1848 unique asset living on Optimism ethereum layer 2, this collection promotes an optimist vision as Solar Punks do.  \\nThe collection consists of 22 shapes x 84 assets including 5 different rarities, each assets are distributed randomly. NFTs metadata consist of SVG on-chain, encoded into the `tokenID` and rendered with the `tokenURI` function. The contract is verified on explorers and IPFS, so you can mint your asset wherever you want.";
     string internal constant CONTRACT_IMAGE = "";
-    string internal constant EXTERNAL_URL = "https://github.com";
+    string internal constant EXTERNAL_URL =
+        "https://github.com/RaphaelHardFork/solar-punk";
 }

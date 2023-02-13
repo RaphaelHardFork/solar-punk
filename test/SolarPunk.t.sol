@@ -25,8 +25,8 @@ contract SolarPunk_test is BaseSolarPunk, Roles {
     ////////////////////////////////////////////////////*/
 
     function test_constructor_NameAndOwnerShip() public {
-        assertEq(solar.name(), "SolarPunk v0.5");
-        assertEq(solar.symbol(), "SPKv0.5");
+        assertEq(solar.name(), "SolarPunk");
+        assertEq(solar.symbol(), "SPK");
         assertEq(solar.owner(), OWNER);
     }
 
