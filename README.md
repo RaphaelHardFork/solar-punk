@@ -1,6 +1,6 @@
 # Solar Punk Collection
 
-![](https://img.shields.io/badge/Audits-no%20review-red) ![](https://img.shields.io/badge/Tests%20coverage-~97%-green)
+![](https://img.shields.io/badge/Audits-no%20review-red) ![](https://img.shields.io/badge/Tests%20coverage-97%-green)
 
 _Solar Punk is a collection on ERC721 deployed on Optimism with on-chain metadata and a partial randomness generation. Solar Punk is a small project training for using a free source of randomness and fully decentralized metadata._
 
