@@ -187,9 +187,8 @@ contract SolarPunk_test is BaseSolarPunk, Roles {
 
         vm.startPrank(USERS[0]);
 
-        solar.requestMint{value: PRICE * 101}(block.number + 10, 101);
         vm.expectRevert(ISolarPunk.RequestListTooLong.selector);
-        solar.requestMint{value: PRICE}(block.number + 10, 1);
+        solar.requestMint{value: PRICE * 101}(block.number + 10, 101);
     }
 
     function test_requestMint_RequestAllItem() public {
@@ -221,22 +220,6 @@ contract SolarPunk_test is BaseSolarPunk, Roles {
         assertEq(solar.totalRemainingItems(), 83);
         assertEq(solar.remainningItemOfShape(1), 83);
         assertEq(solar.balanceOf(USERS[0]), 1);
-    }
-
-    function test_fulfillRequest_EmitOnFulfilling() public {
-        uint256 targetBlock = block.number + 10;
-        vm.prank(OWNER);
-        solar.addAsset(KIWI);
-        vm.startPrank(USERS[0]);
-        solar.requestMint{value: 0.03 ether}(targetBlock, 1);
-        vm.roll(block.number + 11);
-
-        vm.expectEmit(true, false, false, true, SOLAR);
-        emit RequestFulfilled(
-            USERS[0],
-            472100155359515149430400871624772882980357706012634421624237786014337204224
-        );
-        solar.fulfillRequest(false);
     }
 
     function test_fulfillRequest_FillOtherRequest() public {

@@ -50,7 +50,7 @@ contract SolarPunk is ERC721Enumerable, Ownable, ISolarPunk {
     /// @param owner address of owner of the contract
     constructor(address owner) ERC721("SolarPunk v0.5", "SPKv0.5") {
         if (msg.sender != owner) transferOwnership(owner);
-        cost = 0.000003 ether;
+        cost = 0.001 ether;
     }
 
     /*/////////////////////////////////////////////////////////////
@@ -67,10 +67,10 @@ contract SolarPunk is ERC721Enumerable, Ownable, ISolarPunk {
      * */
     function requestMint(uint256 blockNumber, uint256 amount) external payable {
         // check inputs
-        if (blockNumber <= block.number || blockNumber > block.number + 72000)
+        if (blockNumber <= block.number || blockNumber > block.number + 36000)
             revert OutOfBlockRange(blockNumber);
         if (msg.value < cost * amount) revert ValueBelowExpected(msg.value);
-        if (_requestList.length() > 100) revert RequestListTooLong();
+        if (_requestList.length() + amount > 100) revert RequestListTooLong();
         if (_availableItems < amount) revert NoAvailableItems();
 
         // decrement available items

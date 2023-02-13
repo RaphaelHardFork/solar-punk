@@ -1,6 +1,6 @@
 # Solar Punk Collection
 
-![](https://img.shields.io/badge/Tests%20coverage-~97%-green)
+![](https://img.shields.io/badge/Audits-no%20review-red) ![](https://img.shields.io/badge/Tests%20coverage-~97%-green)
 
 _Solar Punk is a collection on ERC721 deployed on Optimism with on-chain metadata and a partial randomness generation. Solar Punk is a small project training for using a free source of randomness and fully decentralized metadata._
 
@@ -8,10 +8,20 @@ _Solar Punk is a collection on ERC721 deployed on Optimism with on-chain metadat
 
 TODO:
 
-- [x] Check IPFS hash
-- [x] Add licence and badge
-- [ ] Add repo build deploy verify
-- [ ] Change design and deploy on mainnet
+- [x] Add a third shape
+- [x] Add description and hide not upcommed description
+- [x] Add verify explanation
+- [x] Add improvments or delete
+- [x] Change design
+- [x] Add the table graphical
+- [x] get OP money on address
+- [x] Separate deployer and owner
+- [ ] deploy on mainnet and testnet
+- [ ] Add IPFS hash and contract size
+- [ ] Add address
+- [ ] Remove TODO
+- [ ] Change repo name and description
+- [ ] Go public
 
 ---
 
@@ -22,7 +32,7 @@ Here the steps to mint a Solar Punk:
 1. Go to any explorer or the dApp
 2. Send value and commit to a future block with `requestMint(uint256,uint256)`:
    - **value:** 0.005 ether by requested asset to mint
-   - **blockNumber:** choose a block in the range `[block.number + 1 : block.number + 72000)`
+   - **blockNumber:** choose a block in the range `[block.number + 1 : block.number + 36000)`
    - **amount:** number of requested asset to mint
 3. Wait until the committed block is reached and call `fulfillRequest(bool)`:
    - **onlyOwnerRequest:** true if you want to fulfill only your request (token of others are not minted)
@@ -31,17 +41,19 @@ If your request is expired, the request is postponed to `block.number + 3000` wh
 
 ## Deployments
 
-| Contracts            | Optimism mainnet | Optimism goerli | Contracts size | Metadata hash |
-| -------------------- | ---------------- | --------------- | -------------- | ------------- |
-| `SolarPunk` (ERC721) | 0xaaa            | 0xbbb           | 0              |               |
-| `Kiwi`               | 0xaaa            | 0xbbb           | 0              |               |
-| `Dragonfly`          | 0xaaa            | 0xbbb           | 0              |               |
+| Contracts            | Optimism mainnet | Contracts size | Metadata hash |
+| -------------------- | ---------------- | -------------- | ------------- |
+| `SolarPunk` (ERC721) | 0xaaa            | 0              |               |
+| `Kiwi`               | 0xaaa            | 0              |               |
+| `Dragonfly`          | 0xaaa            | 0              |               |
+
+SolarPunk on testnet: [Goerli Optimism](0x7582963C68B6187919d9Eb311f3343bA7777149d) | [Goerli](0xc3793ecC3A0aa3B5a0f7b23A375b0c92df72DA25)
 
 ## Technical choices
 
 ### Source of randomness
 
-To generate a random number before minting a token the blockhash of a future block is used. The smart contract asks the user to commit a block in the future (`[block.number + 1 : block.number + 72000)`), 72000 blocks correspond to approximatively 10 days on Optimism network. Once the targeted block is reached, the user can mint the token using the blockhash to draw among available assets.
+To generate a random number before minting a token the blockhash of a future block is used. The smart contract asks the user to commit a block in the future (`[block.number + 1 : block.number + 36000)`), 36000 blocks correspond to approximatively 5 days on Optimism network. Once the targeted block is reached, the user can mint the token using the blockhash to draw among available assets.
 
 **Advantage of commiting to a future blockhash:**
 
@@ -97,6 +109,12 @@ Also the code to render the svg asset is complex because Solidity and the EVM ar
 
 ## Improvements
 
+- [ ] Generate random color frames in one or several rarities
+- [ ] Allow shape (or frames) to evolve based on a reputation system for example (Dynamical metadata)
+- [ ] Use `solidity 0.8.18` and `block.prevrandao` for random number generation
+- [ ] Commit to an Epoch for randomness, allow to create compacted request
+- [ ] Find a way to resolve NFT distribution in one transaction (commitment reveal previous commitment). Problem: adapted for metadata randomly generated, in SolarPunk item are pre registered into a list (`SwapAndPop`) and rarities are predetermined.
+
 ---
 
 # Using
@@ -118,7 +136,7 @@ forge build
 
 ```
 forge build
-node utils/ipfsAppended.js <name_of_contract>
+node utils/ipfsAppended.js <contract_name>
 ```
 
 ## Testing contracts
@@ -157,3 +175,27 @@ forge script deploy --rpc-url <network_alias>
 ```
 
 Then execute with `--broadcast`
+
+## Verify contract
+
+**Sourcify:**
+
+```
+forge verify-contract <address> <contract_name> --chain <chain_id> --verifier sourcify
+```
+
+**Etherscan:**
+Make sure you have set the `ETHERSCAN_KEY` in `.env`
+
+```
+source .env
+forge verify-contract <address> <contract_name> --chain <network_alias | chain_id> $ETHERSCAN_KEY --watch
+```
+
+If the contract was deployed with arguments:
+
+```
+cast abi-encode "constructor(address,uint256)" 0xdaab... 500000
+```
+
+Then add the flag `--constructor-args` with the above result to the `forge verify-contract` command

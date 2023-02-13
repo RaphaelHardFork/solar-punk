@@ -12,3 +12,6 @@ broadcast/
 node_modules/
 
 DescriptionToCome.md
+
+# Coverage extensions 
+lcov.info

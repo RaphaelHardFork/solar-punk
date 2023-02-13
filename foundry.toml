@@ -12,5 +12,5 @@ sepolia = "https://ethereum-sepolia-rpc.allthatnode.com"
 polygon = "https://polygon-rpc.com"
 arbitrum = "https://arbitrum.public-rpc.com"
 optimism = "https://1rpc.io/op"
-
+optimism_goerli = "https://goerli.optimism.io"
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
