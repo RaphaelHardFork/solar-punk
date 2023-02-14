@@ -18,6 +18,12 @@ Here the steps to mint a Solar Punk:
 
 If your request is expired, the request is postponed to `block.number + 3000` when calling `fulfillRequest`. Once a request is done number of available assets decrement so you can request an asset and take the risk to not mint a token then.
 
+### ⚠️ Note on breaking changes since Optimism Bedrock
+
+Optimism network was chosen for his relatively slow block time, average of 12 second per block (pretty the same as the Ethereum mainnet). But this affirmation not stand with the Bedrock upgrade, this new version comes with a faster block time (less than 2s, actually closer from 0.5s per block).
+
+Let's say 0.5s/block, minting a SolarPunk offer a window of 2min to mint the assets once the block is reached, otherwise the block is postponed to 20~25min later. So be quick for minting the assets once the block is reached.
+
 ## Deployments
 
 | Contracts            | Optimism mainnet                                                                                                                      | Contracts size (kB) | Metadata hash (IPFS)                           |
