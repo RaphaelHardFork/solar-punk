@@ -19,7 +19,7 @@ contract deploy is Script, ArtifactWriter {
 
     function run() public {
         // import `.env` private key
-        uint256 pk = vm.envUint("DEPLOYER_GOERLI");
+        uint256 pk = vm.envUint("DEPLOYER_OPTIMISM");
         DEPLOYER = vm.addr(pk);
 
         _logsDeploymentEnvironment();
@@ -30,14 +30,6 @@ contract deploy is Script, ArtifactWriter {
         Kiwi kiwi = new Kiwi();
         Dragonfly dragonfly = new Dragonfly();
         Onion onion = new Onion();
-
-        // SolarPunk solarPunk = SolarPunk(
-        //     0x7582963C68B6187919d9Eb311f3343bA7777149d
-        // );
-
-        // solarPunk.addAsset(0xa4c949d74fbEfDf4fFFFe03b70143A5cC0fc2717);
-        // solarPunk.addAsset(0xb1f2773c2aBfd7CF884320C6719edf0086514e16);
-        // solarPunk.addAsset(0xf3786Ed209Ec11DE832B44DC85c0b5a953D5fb68);
 
         solarPunk.addAsset(address(kiwi));
         solarPunk.addAsset(address(dragonfly));

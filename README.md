@@ -1,29 +1,8 @@
 # Solar Punk Collection
 
-![](https://img.shields.io/badge/Audits-no%20review-red) ![](https://img.shields.io/badge/Tests%20coverage-97%-green)
+![](https://img.shields.io/badge/Audits-no%20review-red) ![](https://img.shields.io/badge/Tests%20coverage-90%25-green)
 
 _Solar Punk is a collection on ERC721 deployed on Optimism with on-chain metadata and a partial randomness generation. Solar Punk is a small project training for using a free source of randomness and fully decentralized metadata._
-
----
-
-TODO:
-
-- [x] Add a third shape
-- [x] Add description and hide not upcommed description
-- [x] Add verify explanation
-- [x] Add improvments or delete
-- [x] Change design
-- [x] Add the table graphical
-- [x] get OP money on address
-- [x] Separate deployer and owner
-- [ ] deploy on mainnet and testnet
-- [ ] Add IPFS hash and contract size
-- [ ] Add address
-- [ ] Remove TODO
-- [ ] Change repo name and description
-- [ ] Go public
-
----
 
 ## Mint a Solar Punk
 
@@ -41,11 +20,12 @@ If your request is expired, the request is postponed to `block.number + 3000` wh
 
 ## Deployments
 
-| Contracts            | Optimism mainnet | Contracts size | Metadata hash |
-| -------------------- | ---------------- | -------------- | ------------- |
-| `SolarPunk` (ERC721) | 0xaaa            | 0              |               |
-| `Kiwi`               | 0xaaa            | 0              |               |
-| `Dragonfly`          | 0xaaa            | 0              |               |
+| Contracts            | Optimism mainnet                                                                                                                      | Contracts size (kB) | Metadata hash (IPFS)                           |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ---------------------------------------------- |
+| `SolarPunk` (ERC721) | [0x7582963C68B6187919d9Eb311f3343bA7777149d](https://optimistic.etherscan.io/address/0x7582963c68b6187919d9eb311f3343ba7777149d#code) | 18.267              | QmTxnWhDN2txnCqGD2eXB4BAGWWEXi62o8WRyuwkEpqSGc |
+| `Kiwi`               | [0xa4c949d74fbEfDf4fFFFe03b70143A5cC0fc2717](https://optimistic.etherscan.io/address/0xa4c949d74fbefdf4ffffe03b70143a5cc0fc2717#code) | 1.899               | QmQuwG3q3yggEuDSVVMyZXebe2qoYKx2VaKtzKmsDR5d8B |
+| `Dragonfly`          | [0xb1f2773c2aBfd7CF884320C6719edf0086514e16](https://optimistic.etherscan.io/address/0xb1f2773c2abfd7cf884320c6719edf0086514e16#code) | 2.609               | QmYkerZrhLSvEMJd4GSzHDFkzwsBNCDmR42TDHCQiRTJxs |
+| `Onion`              | [0xf3786Ed209Ec11DE832B44DC85c0b5a953D5fb68](https://optimistic.etherscan.io/address/0xf3786ed209ec11de832b44dc85c0b5a953d5fb68#code) | 2.726               | QmcoVtvG4q9MRCDjJgRUQbt9pqb73WvfZHQt3BwK417YxZ |
 
 SolarPunk on testnet: [Goerli Optimism](0x7582963C68B6187919d9Eb311f3343bA7777149d) | [Goerli](0xc3793ecC3A0aa3B5a0f7b23A375b0c92df72DA25)
 
@@ -109,11 +89,8 @@ Also the code to render the svg asset is complex because Solidity and the EVM ar
 
 ## Improvements
 
-- [ ] Generate random color frames in one or several rarities
-- [ ] Allow shape (or frames) to evolve based on a reputation system for example (Dynamical metadata)
-- [ ] Use `solidity 0.8.18` and `block.prevrandao` for random number generation
-- [ ] Commit to an Epoch for randomness, allow to create compacted request
-- [ ] Find a way to resolve NFT distribution in one transaction (commitment reveal previous commitment). Problem: adapted for metadata randomly generated, in SolarPunk item are pre registered into a list (`SwapAndPop`) and rarities are predetermined.
+- [ ] Minting process in one TX using Epoch commit/reveal for randomness and random metadata generation. See [@\_MouseDev thread](https://twitter.com/_MouseDev/status/1623044314983964682?s=20&t=rAHEvrVJr-7GwI_q6nG7Tw).
+- [ ] Allow shape (or frames) to evolve based on a reputation system for example (Dynamical metadata).
 
 ---
 
@@ -192,7 +169,7 @@ source .env
 forge verify-contract <address> <contract_name> --chain <network_alias | chain_id> $ETHERSCAN_KEY --watch
 ```
 
-If the contract was deployed with arguments:
+If the contract has been deployed with arguments:
 
 ```
 cast abi-encode "constructor(address,uint256)" 0xdaab... 500000
