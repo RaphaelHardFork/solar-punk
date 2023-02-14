@@ -28,6 +28,7 @@ interface ISolarPunk {
     error NoRequestToFulfill();
     error InexistantIndex(uint256 index);
     error InexistantAsset(uint256 index);
+    error AssetsNumberLimitReached();
 
     /*/////////////////////////////////////////////////////////////
                             PUBLIC FUNCTIONS

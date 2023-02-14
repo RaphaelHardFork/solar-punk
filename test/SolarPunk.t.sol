@@ -63,6 +63,16 @@ contract SolarPunk_test is BaseSolarPunk, Roles {
         assertEq(solar.numberOfShapes(), 2);
     }
 
+    function test_addAsset_OverTheLimit() public {
+        vm.startPrank(OWNER);
+        for (uint256 i; i < 22; i++) {
+            solar.addAsset(KIWI);
+        }
+        vm.expectRevert(ISolarPunk.AssetsNumberLimitReached.selector);
+        solar.addAsset(KIWI);
+        assertEq(solar.availableItems(), 1848);
+    }
+
     /*/////////////////////////////////////////////////
                         requestMint()
     /////////////////////////////////////////////////*/

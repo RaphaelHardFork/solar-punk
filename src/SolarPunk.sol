@@ -138,6 +138,7 @@ contract SolarPunk is ERC721Enumerable, Ownable, ISolarPunk {
      * amount of `assets` must be caped to 22.
      * */
     function addAsset(address assetAddr) external onlyOwner {
+        if (_lastShapeId == 22) revert AssetsNumberLimitReached();
         unchecked {
             ++_lastShapeId;
         }
